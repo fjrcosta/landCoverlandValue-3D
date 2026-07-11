@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: landCoverlandValue-3D
+message: >-
+  Cite this software record when referring to the interactive 3D
+  visualization. For the DINOv2 + LoRA urban land-cover component,
+  cite the associated article. The citation for the TabPFN v2
+  land-value component will be added after publication.
+type: software
+version: 1.0.0
+date-released: 2026-07-11
+
+authors:
+  - family-names: da Costa
+    given-names: Felinto J.
+
+license: MIT
+repository-code: https://github.com/fjrcosta/landCoverlandValue-3D
+
+preferred-citation:
+  type: article
+  authors:
+    - family-names: da Costa
+      given-names: Felinto J.
+    - family-names: Urbano
+      given-names: Mariana R.
+  title: Efficient specialization of foundation vision models for urban land cover classification
+  journal: Artificial Intelligence in Geosciences
+  volume: 7
+  issue: 2
+  year: 2026
+  identifiers:
+    - type: doi
+      value: 10.1016/j.aiig.2026.100225

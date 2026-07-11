@@ -1,0 +1,639 @@
+{
+  "schemaVersion": 1,
+  "title": "Northern Paraná Urban Twin",
+  "datasetMode": "model-output",
+  "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and retransformation assumptions documented in the associated research.",
+  "gridSizeM": 109.45,
+  "crs": "EPSG:4326",
+  "sourceCrs": "EPSG:29192",
+  "modelLabels": {
+    "landCover": "DINOv2 ViT-L/14 + LoRA",
+    "landValue": "TabPFN v2 — median unit urban land value"
+  },
+  "classes": [
+    {
+      "key": "bare",
+      "label": "Bare soil",
+      "index": 0
+    },
+    {
+      "key": "bush",
+      "label": "Shrubs / scrub",
+      "index": 1
+    },
+    {
+      "key": "crop",
+      "label": "Row crops",
+      "index": 2
+    },
+    {
+      "key": "grass",
+      "label": "Grass / pasture",
+      "index": 3
+    },
+    {
+      "key": "hduf",
+      "label": "Developed — high density",
+      "index": 4
+    },
+    {
+      "key": "industrial",
+      "label": "Industrial",
+      "index": 5
+    },
+    {
+      "key": "lduf",
+      "label": "Developed — low density",
+      "index": 6
+    },
+    {
+      "key": "mduf",
+      "label": "Developed — medium density",
+      "index": 7
+    },
+    {
+      "key": "tree",
+      "label": "Trees",
+      "index": 8
+    },
+    {
+      "key": "water",
+      "label": "Water",
+      "index": 9
+    }
+  ],
+  "globalStats": {
+    "cities": 12,
+    "cells": 73399,
+    "min": 314.71,
+    "median": 604.57,
+    "p90": 1113.81,
+    "max": 3650.38,
+    "classCounts": {
+      "bare": 2091,
+      "bush": 3003,
+      "crop": 27516,
+      "grass": 3218,
+      "hduf": 522,
+      "industrial": 7162,
+      "lduf": 20196,
+      "mduf": 3615,
+      "tree": 5664,
+      "water": 412
+    }
+  },
+  "cities": [
+    {
+      "slug": "londrina",
+      "name": "Londrina",
+      "center": [
+        -51.164492,
+        -23.318439
+      ],
+      "bounds": [
+        [
+          -51.247999,
+          -23.440083
+        ],
+        [
+          -51.08063,
+          -23.23518
+        ]
+      ],
+      "stats": {
+        "cells": 18384,
+        "min": 341.94,
+        "p10": 537.67,
+        "median": 755.72,
+        "mean": 924.07,
+        "p90": 1575.04,
+        "max": 3650.38,
+        "meanConfidence": 0.917,
+        "medianMatchDistanceM": 6.24,
+        "p95MatchDistanceM": 6.27,
+        "dominantClass": "lduf",
+        "classCounts": {
+          "bare": 575,
+          "bush": 927,
+          "crop": 5342,
+          "grass": 554,
+          "hduf": 371,
+          "industrial": 1727,
+          "lduf": 5484,
+          "mduf": 1418,
+          "tree": 1790,
+          "water": 196
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/londrina.json"
+    },
+    {
+      "slug": "cambe",
+      "name": "Cambé",
+      "center": [
+        -51.265007,
+        -23.280377
+      ],
+      "bounds": [
+        [
+          -51.326609,
+          -23.334268
+        ],
+        [
+          -51.206446,
+          -23.191346
+        ]
+      ],
+      "stats": {
+        "cells": 5922,
+        "min": 411.34,
+        "p10": 492.67,
+        "median": 626.21,
+        "mean": 631.37,
+        "p90": 760.87,
+        "max": 1088.59,
+        "meanConfidence": 0.9311,
+        "medianMatchDistanceM": 6.17,
+        "p95MatchDistanceM": 6.2,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 155,
+          "bush": 299,
+          "crop": 2952,
+          "grass": 88,
+          "hduf": 1,
+          "industrial": 492,
+          "lduf": 1510,
+          "mduf": 207,
+          "tree": 210,
+          "water": 8
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/cambe.json"
+    },
+    {
+      "slug": "ibipora",
+      "name": "Ibiporã",
+      "center": [
+        -51.053311,
+        -23.260896
+      ],
+      "bounds": [
+        [
+          -51.097226,
+          -23.304382
+        ],
+        [
+          -51.006031,
+          -23.181156
+        ]
+      ],
+      "stats": {
+        "cells": 3916,
+        "min": 375.72,
+        "p10": 450.43,
+        "median": 641.02,
+        "mean": 636.57,
+        "p90": 819.23,
+        "max": 1309.23,
+        "meanConfidence": 0.9191,
+        "medianMatchDistanceM": 6.23,
+        "p95MatchDistanceM": 6.24,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 103,
+          "bush": 239,
+          "crop": 1819,
+          "grass": 105,
+          "hduf": 1,
+          "industrial": 278,
+          "lduf": 885,
+          "mduf": 65,
+          "tree": 411,
+          "water": 10
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/ibipora.json"
+    },
+    {
+      "slug": "rolandia",
+      "name": "Rolândia",
+      "center": [
+        -51.378527,
+        -23.317625
+      ],
+      "bounds": [
+        [
+          -51.431613,
+          -23.359587
+        ],
+        [
+          -51.325398,
+          -23.27584
+        ]
+      ],
+      "stats": {
+        "cells": 3780,
+        "min": 340.71,
+        "p10": 424.03,
+        "median": 496.38,
+        "mean": 525.13,
+        "p90": 699.79,
+        "max": 856.53,
+        "meanConfidence": 0.9095,
+        "medianMatchDistanceM": 6.1,
+        "p95MatchDistanceM": 6.11,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 100,
+          "bush": 181,
+          "crop": 1259,
+          "grass": 335,
+          "hduf": 1,
+          "industrial": 403,
+          "lduf": 1066,
+          "mduf": 138,
+          "tree": 259,
+          "water": 38
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/rolandia.json"
+    },
+    {
+      "slug": "arapongas",
+      "name": "Arapongas",
+      "center": [
+        -51.446632,
+        -23.413706
+      ],
+      "bounds": [
+        [
+          -51.513089,
+          -23.509081
+        ],
+        [
+          -51.384344,
+          -23.342709
+        ]
+      ],
+      "stats": {
+        "cells": 10696,
+        "min": 360.03,
+        "p10": 466.83,
+        "median": 543.08,
+        "mean": 562.84,
+        "p90": 682.93,
+        "max": 1088.87,
+        "meanConfidence": 0.9395,
+        "medianMatchDistanceM": 6.11,
+        "p95MatchDistanceM": 6.15,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 180,
+          "bush": 199,
+          "crop": 5988,
+          "grass": 730,
+          "hduf": 9,
+          "industrial": 815,
+          "lduf": 1788,
+          "mduf": 240,
+          "tree": 715,
+          "water": 32
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/arapongas.json"
+    },
+    {
+      "slug": "apucarana",
+      "name": "Apucarana",
+      "center": [
+        -51.45568,
+        -23.556397
+      ],
+      "bounds": [
+        [
+          -51.526212,
+          -23.603158
+        ],
+        [
+          -51.388882,
+          -23.503827
+        ]
+      ],
+      "stats": {
+        "cells": 9062,
+        "min": 314.71,
+        "p10": 381.01,
+        "median": 439.88,
+        "mean": 467.18,
+        "p90": 554.1,
+        "max": 1625.03,
+        "meanConfidence": 0.9087,
+        "medianMatchDistanceM": 6.3,
+        "p95MatchDistanceM": 6.41,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 218,
+          "bush": 440,
+          "crop": 3816,
+          "grass": 386,
+          "hduf": 30,
+          "industrial": 640,
+          "lduf": 1867,
+          "mduf": 341,
+          "tree": 1241,
+          "water": 83
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/apucarana.json"
+    },
+    {
+      "slug": "cambira",
+      "name": "Cambira",
+      "center": [
+        -51.578393,
+        -23.600171
+      ],
+      "bounds": [
+        [
+          -51.591376,
+          -23.608308
+        ],
+        [
+          -51.5667,
+          -23.587662
+        ]
+      ],
+      "stats": {
+        "cells": 238,
+        "min": 358.85,
+        "p10": 406.27,
+        "median": 459.61,
+        "mean": 458.63,
+        "p90": 506.13,
+        "max": 568.12,
+        "meanConfidence": 0.9413,
+        "medianMatchDistanceM": 6.67,
+        "p95MatchDistanceM": 6.71,
+        "dominantClass": "lduf",
+        "classCounts": {
+          "bare": 8,
+          "bush": 2,
+          "crop": 49,
+          "grass": 0,
+          "hduf": 0,
+          "industrial": 21,
+          "lduf": 149,
+          "mduf": 5,
+          "tree": 4,
+          "water": 0
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/cambira.json"
+    },
+    {
+      "slug": "jandaia",
+      "name": "Jandaia do Sul",
+      "center": [
+        -51.64058,
+        -23.599081
+      ],
+      "bounds": [
+        [
+          -51.675836,
+          -23.637203
+        ],
+        [
+          -51.600734,
+          -23.574285
+        ]
+      ],
+      "stats": {
+        "cells": 1696,
+        "min": 354.14,
+        "p10": 396.89,
+        "median": 474.04,
+        "mean": 479.06,
+        "p90": 559.82,
+        "max": 733.45,
+        "meanConfidence": 0.8811,
+        "medianMatchDistanceM": 6.83,
+        "p95MatchDistanceM": 6.91,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 169,
+          "bush": 150,
+          "crop": 636,
+          "grass": 54,
+          "hduf": 4,
+          "industrial": 135,
+          "lduf": 409,
+          "mduf": 36,
+          "tree": 101,
+          "water": 2
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/jandaia.json"
+    },
+    {
+      "slug": "mandaguari",
+      "name": "Mandaguari",
+      "center": [
+        -51.693186,
+        -23.519893
+      ],
+      "bounds": [
+        [
+          -51.752873,
+          -23.578447
+        ],
+        [
+          -51.641292,
+          -23.491889
+        ]
+      ],
+      "stats": {
+        "cells": 3528,
+        "min": 474.3,
+        "p10": 515.06,
+        "median": 557.58,
+        "mean": 566.88,
+        "p90": 640.18,
+        "max": 752.09,
+        "meanConfidence": 0.9347,
+        "medianMatchDistanceM": 6.75,
+        "p95MatchDistanceM": 6.81,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 66,
+          "bush": 128,
+          "crop": 2180,
+          "grass": 109,
+          "hduf": 0,
+          "industrial": 231,
+          "lduf": 564,
+          "mduf": 33,
+          "tree": 206,
+          "water": 11
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/mandaguari.json"
+    },
+    {
+      "slug": "marialva",
+      "name": "Marialva",
+      "center": [
+        -51.803994,
+        -23.480742
+      ],
+      "bounds": [
+        [
+          -51.850928,
+          -23.50993
+        ],
+        [
+          -51.761878,
+          -23.448919
+        ]
+      ],
+      "stats": {
+        "cells": 2304,
+        "min": 361.85,
+        "p10": 407.28,
+        "median": 485.85,
+        "mean": 495.91,
+        "p90": 609.37,
+        "max": 706.41,
+        "meanConfidence": 0.9047,
+        "medianMatchDistanceM": 6.79,
+        "p95MatchDistanceM": 6.82,
+        "dominantClass": "crop",
+        "classCounts": {
+          "bare": 85,
+          "bush": 56,
+          "crop": 1125,
+          "grass": 162,
+          "hduf": 0,
+          "industrial": 239,
+          "lduf": 480,
+          "mduf": 111,
+          "tree": 44,
+          "water": 2
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/marialva.json"
+    },
+    {
+      "slug": "sarandi",
+      "name": "Sarandi",
+      "center": [
+        -51.868812,
+        -23.446703
+      ],
+      "bounds": [
+        [
+          -51.89977,
+          -23.483137
+        ],
+        [
+          -51.845052,
+          -23.411284
+        ]
+      ],
+      "stats": {
+        "cells": 2348,
+        "min": 346.15,
+        "p10": 438.6,
+        "median": 560.12,
+        "mean": 635.85,
+        "p90": 944.84,
+        "max": 1133.34,
+        "meanConfidence": 0.923,
+        "medianMatchDistanceM": 6.79,
+        "p95MatchDistanceM": 6.84,
+        "dominantClass": "lduf",
+        "classCounts": {
+          "bare": 76,
+          "bush": 33,
+          "crop": 511,
+          "grass": 117,
+          "hduf": 1,
+          "industrial": 222,
+          "lduf": 1188,
+          "mduf": 183,
+          "tree": 16,
+          "water": 1
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/sarandi.json"
+    },
+    {
+      "slug": "maringa",
+      "name": "Maringá",
+      "center": [
+        -51.947242,
+        -23.426692
+      ],
+      "bounds": [
+        [
+          -52.033232,
+          -23.490478
+        ],
+        [
+          -51.859423,
+          -23.364472
+        ]
+      ],
+      "stats": {
+        "cells": 11525,
+        "min": 419.26,
+        "p10": 642.94,
+        "median": 892.76,
+        "mean": 1030.28,
+        "p90": 1693.99,
+        "max": 3076.15,
+        "meanConfidence": 0.9063,
+        "medianMatchDistanceM": 6.81,
+        "p95MatchDistanceM": 6.93,
+        "dominantClass": "lduf",
+        "classCounts": {
+          "bare": 356,
+          "bush": 349,
+          "crop": 1839,
+          "grass": 578,
+          "hduf": 104,
+          "industrial": 1959,
+          "lduf": 4806,
+          "mduf": 838,
+          "tree": 667,
+          "water": 29
+        },
+        "matchesOverThreshold": 0,
+        "matchThresholdM": 250.0
+      },
+      "file": "data/cities/maringa.json"
+    }
+  ]
+}

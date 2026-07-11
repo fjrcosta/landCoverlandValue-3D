@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive 3D visualization of urban land cover and predicted unit land value across 12 cities in Northern Paraná, Brazil." />
+  <meta name="theme-color" content="#07111f" />
+  <title>Northern Paraná Urban Twin</title>
+  <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260711-3" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <div id="map" aria-label="Interactive 3D map of Northern Paraná"></div>
+
+    <header class="topbar glass">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </div>
+        <div>
+          <h1>Northern Paraná Urban Twin</h1>
+          <p>Urban land cover × unit land value · 2024</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="datasetBadge" class="badge badge-warning">Loading</span>
+        <button id="tourButton" class="button button-secondary" type="button" title="Tour all 12 cities">▶ City tour</button>
+        <button id="resetButton" class="icon-button" type="button" title="Reset regional view" aria-label="Reset regional view">⌂</button>
+      </div>
+    </header>
+
+    <aside class="control-panel glass" aria-label="Map controls">
+      <div class="panel-scroll">
+        <section class="panel-section">
+          <div class="section-heading">
+            <span>Geography</span>
+            <span id="cellCount" class="section-meta">—</span>
+          </div>
+          <label class="field-label" for="citySelect">City</label>
+          <select id="citySelect" class="select-control">
+            <option value="all">All 12 cities</option>
+          </select>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading"><span>Analytical mode</span></div>
+          <div class="segmented" role="group" aria-label="Analytical mode">
+            <button class="segment active" data-mode="integrated" type="button">
+              <strong>Integrated 3D</strong><small>class color + value height</small>
+            </button>
+            <button class="segment" data-mode="cover" type="button">
+              <strong>Land cover</strong><small>DINOv2–LoRA</small>
+            </button>
+            <button class="segment" data-mode="value" type="button">
+              <strong>Land value</strong><small>TabPFN v2</small>
+            </button>
+          </div>
+        </section>
+
+        <section class="panel-section" id="heightSection">
+          <div class="range-header">
+            <label for="heightScale">Vertical exaggeration</label>
+            <output id="heightScaleOutput">1.00×</output>
+          </div>
+          <input id="heightScale" class="range-control" type="range" min="0" max="2.5" step="0.05" value="1" />
+          <div class="range-hint"><span>flat</span><span>analytical</span><span>dramatic</span></div>
+        </section>
+
+        <section class="panel-section" id="blendSection">
+          <div class="range-header">
+            <label for="colorBlend">Value tint in class colors</label>
+            <output id="colorBlendOutput">22%</output>
+          </div>
+          <input id="colorBlend" class="range-control" type="range" min="0" max="1" step="0.01" value="0.22" />
+          <p class="microcopy"><strong>Color only:</strong> this control blends the continuous land-value palette into the categorical land-cover color. It does not alter prism height; height is controlled separately by vertical exaggeration.</p>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading"><span>Urban land-cover classes</span><button id="toggleClasses" class="text-button" type="button">Clear</button></div>
+          <div id="classFilters" class="class-filters"></div>
+        </section>
+
+        <section class="panel-section">
+          <div class="section-heading"><span>Scene</span></div>
+          <label class="toggle-row">
+            <input id="buildingsToggle" type="checkbox" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>3D buildings</strong><small>OpenStreetMap-derived basemap geometry</small></span>
+          </label>
+          <label class="toggle-row">
+            <input id="labelsToggle" type="checkbox" checked />
+            <span class="toggle-ui"></span>
+            <span><strong>City labels</strong><small>Regional orientation</small></span>
+          </label>
+        </section>
+
+        <section class="panel-section panel-actions">
+          <button id="downloadButton" class="button button-primary" type="button">↓ Export visible data</button>
+          <button id="aboutButton" class="button button-secondary" type="button">Method & data</button>
+        </section>
+      </div>
+    </aside>
+
+    <aside id="insightPanel" class="insight-panel glass" aria-live="polite">
+      <div class="insight-title-row">
+        <div>
+          <span class="eyebrow">Visible selection</span>
+          <h2 id="selectionTitle">Northern Paraná</h2>
+        </div>
+        <span id="selectionModel" class="status-dot" title="Dataset status"></span>
+      </div>
+
+      <div class="value-metric-grid" aria-label="Visible land-value distribution">
+        <div class="metric"><span>10th percentile</span><strong id="p10Metric">—</strong></div>
+        <div class="metric"><span>Median land value</span><strong id="medianMetric">—</strong></div>
+        <div class="metric"><span>90th percentile</span><strong id="p90Metric">—</strong></div>
+      </div>
+      <div class="context-metric-grid">
+        <div class="metric"><span>Dominant class</span><strong id="classMetric">—</strong></div>
+        <div class="metric"><span>Mean confidence</span><strong id="confidenceMetric">—</strong></div>
+      </div>
+
+      <section class="distribution-wrap" aria-label="Visible land-cover composition and extent">
+        <div class="distribution-header"><span>Class composition</span><span id="distributionTotal">—</span></div>
+        <div id="distributionBar" class="distribution-bar" aria-label="Land-cover class distribution"></div>
+
+        <div class="breakdown-heading">
+          <span>Selected land-cover classes</span>
+          <span>Extent</span>
+        </div>
+        <div id="classBreakdown" class="class-breakdown" aria-label="Extent by selected land-cover class"></div>
+
+        <div class="distribution-footer total-extent-row"><span>Visible extent</span><strong id="extentMetric">—</strong></div>
+      </section>
+
+      <section class="inline-value-legend" aria-label="Unit land-value color and height scale">
+        <div class="legend-title">Median unit land value <span>R$/m²</span></div>
+        <div class="value-gradient"></div>
+        <div class="gradient-labels"><span id="legendMin">—</span><span id="legendMedian">—</span><span id="legendMax">—</span></div>
+        <div class="height-key"><span class="height-cube low"></span><span>Prism height = predicted value intensity</span><span class="height-cube high"></span></div>
+      </section>
+    </aside>
+
+    <div id="hoverCard" class="hover-card glass" hidden></div>
+    <div id="loadingOverlay" class="loading-overlay">
+      <div class="loader-graphic"><span></span><span></span><span></span></div>
+      <strong>Constructing the urban twin</strong>
+      <p>Loading city grids and initializing GPU layers…</p>
+    </div>
+    <div id="errorBanner" class="error-banner" hidden></div>
+  </div>
+
+  <dialog id="aboutDialog" class="about-dialog">
+    <form method="dialog" class="about-card">
+      <button class="dialog-close" value="close" aria-label="Close">×</button>
+      <span class="eyebrow">Methodological note</span>
+      <h2>One scene, two model outputs</h2>
+      <p>The default integrated layer assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification. Prism height encodes the predicted median unit land value, while prism color encodes land-cover class. The optional value tint adds a second continuous color cue.</p>
+      <div class="method-grid">
+        <div><strong>Urban land cover</strong><span>DINOv2 ViT-L/14 with LoRA; 10 mutually exclusive classes and classification confidence.</span></div>
+        <div><strong>Urban land value</strong><span>TabPFN v2; median prediction transformed from log value to R$/m².</span></div>
+        <div><strong>Spatial integration</strong><span>Nearest-neighbour association in a projected metric CRS, performed offline by the preprocessing script.</span></div>
+        <div><strong>Rendering</strong><span>MapLibre GL JS basemap and deck.gl GPU grid-cell extrusion. Static hosting; no server is required.</span></div>
+      </div>
+      <div id="dataWarning" class="dialog-warning"></div>
+      <p class="dialog-footnote">The visualization is an analytical representation, not a photogrammetric 3D reconstruction. Building heights depend on the basemap’s available OpenStreetMap attributes.</p>
+    </form>
+  </dialog>
+
+  <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+  <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
+  <script type="module" src="./assets/app.js?v=20260711-3"></script>
+</body>
+</html>

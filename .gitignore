@@ -1,0 +1,16 @@
+.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+raw/land_cover/*.csv
+raw/land_value/*.csv
+!raw/land_cover/.gitkeep
+!raw/land_value/.gitkeep
+
+# macOS AppleDouble metadata
+._*
+
+# Local backups
+archived_site_backups/
+site_before_landing_*/
