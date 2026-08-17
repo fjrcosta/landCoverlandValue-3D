@@ -8,6 +8,9 @@ Important fields:
 
 - `datasetMode`: `demo` or `model-output`.
 - `gridSizeM`: nominal side length of each rendered cell.
+- `dataYear`: year represented by the published data.
+- `modelConfiguration`: TabPFN feature configuration used for inference (`60`).
+- `referenceParcelAreaM2`: reference parcel area used for inference (`450`).
 - `classes`: ordered class definitions. The array position is the class index used by each cell.
 - `cities[].file`: path to the compact city JSON.
 

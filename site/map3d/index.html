@@ -161,7 +161,7 @@
       <p>The default integrated layer assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification. Prism height encodes the predicted median unit land value, while prism color encodes land-cover class. The optional value tint adds a second continuous color cue.</p>
       <div class="method-grid">
         <div><strong>Urban land cover</strong><span>DINOv2 ViT-L/14 with LoRA; 10 mutually exclusive classes and classification confidence.</span></div>
-        <div><strong>Urban land value</strong><span>TabPFN v2; median prediction transformed from log value to R$/m².</span></div>
+        <div><strong>Urban land value</strong><span>TabPFN v2, configuration 60; the median unit-value estimate is used directly in R$/m² for a 450 m² reference parcel.</span></div>
         <div><strong>Spatial integration</strong><span>Nearest-neighbour association in a projected metric CRS, performed offline by the preprocessing script.</span></div>
         <div><strong>Rendering</strong><span>MapLibre GL JS basemap and deck.gl GPU grid-cell extrusion. Static hosting; no server is required.</span></div>
       </div>

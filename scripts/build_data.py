@@ -9,9 +9,10 @@ predicted_class, prediction_confidence and either:
 
 Expected land-value columns
 ---------------------------
-utm_x, utm_y, price_predicted
+utm_x, utm_y, unit_q50, configuracao, area_m2
 
-By default, price_predicted is interpreted as log(R$/m²), matching the notebook.
+The model-60 unit_q50 estimate is already expressed in R$/m² and is used
+directly, without exponentiation.
 The script joins each land-value grid-cell centre to its nearest land-cover patch
 centre in a metric projected CRS and writes compact per-city JSON files.
 """
@@ -44,6 +45,11 @@ CLASS_LABELS = {
     "water": "Water",
 }
 CLASS_INDEX = {key: i for i, key in enumerate(CLASS_KEYS)}
+
+VALUE_COLUMN = "unit_q50"
+MODEL_CONFIGURATION = 60
+REFERENCE_PARCEL_AREA_M2 = 450
+DATA_YEAR = 2024
 
 CITY_ORDER = [
     "londrina", "cambe", "ibipora", "rolandia", "arapongas", "apucarana",
@@ -144,9 +150,13 @@ def land_cover_centres(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return mean_coords[:, 0], mean_coords[:, 1]
 
 
-def find_city_files(directory: Path) -> dict[str, Path]:
+def find_city_files(directory: Path, pattern: str = "*.csv") -> dict[str, Path]:
     result: dict[str, Path] = {}
-    for path in sorted(directory.rglob("*.csv")):
+    for path in sorted(directory.rglob(pattern)):
+        if path.name.startswith("._"):
+            continue
+        if "consolidado" in normalize(path.stem):
+            continue
         slug = infer_city(path)
         if not slug:
             print(f"WARNING: city could not be inferred from {path.name}; skipped")
@@ -191,7 +201,6 @@ def build_city(
     value_path: Path,
     value_to_wgs: Transformer,
     wgs_to_metric: Transformer,
-    price_scale: str,
     max_match_distance: float,
     grid_size_m: float,
 ) -> dict:
@@ -199,11 +208,26 @@ def build_city(
     value = read_csv_auto(value_path)
 
     cover_required = {"predicted_class", "prediction_confidence"}
-    value_required = {"utm_x", "utm_y", "price_predicted"}
+    value_required = {
+        "utm_x", "utm_y", VALUE_COLUMN, "configuracao", "area_m2"
+    }
     if not cover_required.issubset(cover.columns):
         raise ValueError(f"{cover_path.name} missing {sorted(cover_required - set(cover.columns))}")
     if not value_required.issubset(value.columns):
         raise ValueError(f"{value_path.name} missing {sorted(value_required - set(value.columns))}")
+
+    configuration = pd.to_numeric(value["configuracao"], errors="coerce")
+    if not configuration.eq(MODEL_CONFIGURATION).all():
+        raise ValueError(
+            f"{value_path.name} does not exclusively contain model configuration "
+            f"{MODEL_CONFIGURATION}"
+        )
+    reference_area = pd.to_numeric(value["area_m2"], errors="coerce")
+    if not reference_area.eq(REFERENCE_PARCEL_AREA_M2).all():
+        raise ValueError(
+            f"{value_path.name} does not exclusively use the "
+            f"{REFERENCE_PARCEL_AREA_M2} m² reference parcel"
+        )
 
     cover = cover.dropna(subset=["predicted_class", "prediction_confidence"]).copy()
     cover["predicted_class"] = cover["predicted_class"].astype(str).map(normalize)
@@ -217,9 +241,9 @@ def build_city(
 
     utm_x = pd.to_numeric(value["utm_x"], errors="coerce").to_numpy(dtype=float)
     utm_y = pd.to_numeric(value["utm_y"], errors="coerce").to_numpy(dtype=float)
-    price_raw = pd.to_numeric(value["price_predicted"], errors="coerce").to_numpy(dtype=float)
-    valid = np.isfinite(utm_x) & np.isfinite(utm_y) & np.isfinite(price_raw)
-    utm_x, utm_y, price_raw = utm_x[valid], utm_y[valid], price_raw[valid]
+    prices = pd.to_numeric(value[VALUE_COLUMN], errors="coerce").to_numpy(dtype=float)
+    valid = np.isfinite(utm_x) & np.isfinite(utm_y) & np.isfinite(prices)
+    utm_x, utm_y, prices = utm_x[valid], utm_y[valid], prices[valid]
 
     lon, lat = value_to_wgs.transform(utm_x, utm_y)
     metric_x, metric_y = wgs_to_metric.transform(lon, lat)
@@ -227,8 +251,6 @@ def build_city(
 
     classes = cover["predicted_class"].to_numpy()[nearest]
     confidence = pd.to_numeric(cover["prediction_confidence"], errors="coerce").fillna(0).to_numpy(dtype=float)[nearest]
-    prices = np.exp(price_raw) if price_scale == "log" else price_raw
-
     finite_price = np.isfinite(prices) & (prices > 0)
     lon, lat, prices = np.asarray(lon)[finite_price], np.asarray(lat)[finite_price], prices[finite_price]
     classes, confidence, distance = classes[finite_price], confidence[finite_price], distance[finite_price]
@@ -263,10 +285,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--land-cover-dir", type=Path, required=True, help="Directory containing one DINOv2–LoRA CSV per city")
     parser.add_argument("--land-value-dir", type=Path, required=True, help="Directory containing one TabPFN CSV per city")
+    parser.add_argument(
+        "--land-value-pattern",
+        default="inferencia_*_cfg60_450m2.csv",
+        help="Filename pattern used to select model-60 land-value CSVs",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("site/map3d/data"), help="Website data directory")
     parser.add_argument("--utm-crs", default="EPSG:29192", help="CRS of utm_x and utm_y; notebook default: EPSG:29192")
     parser.add_argument("--metric-crs", default="EPSG:31982", help="Metric CRS used for nearest-neighbour matching")
-    parser.add_argument("--price-scale", choices=["log", "real"], default="log", help="Interpretation of price_predicted")
     parser.add_argument("--grid-size-m", type=float, default=109.45)
     parser.add_argument("--max-match-distance", type=float, default=250.0, help="Diagnostic threshold; matches are retained and counted")
     return parser.parse_args()
@@ -275,7 +301,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     cover_files = find_city_files(args.land_cover_dir)
-    value_files = find_city_files(args.land_value_dir)
+    value_files = find_city_files(args.land_value_dir, args.land_value_pattern)
     common = [slug for slug in CITY_ORDER if slug in cover_files and slug in value_files]
     missing_cover = [slug for slug in CITY_ORDER if slug not in cover_files]
     missing_value = [slug for slug in CITY_ORDER if slug not in value_files]
@@ -302,7 +328,7 @@ def main() -> None:
         print(f"Building {CITY_NAMES[slug]}…")
         city = build_city(
             slug, cover_files[slug], value_files[slug], value_to_wgs, wgs_to_metric,
-            args.price_scale, args.max_match_distance, args.grid_size_m
+            args.max_match_distance, args.grid_size_m
         )
         output_path = city_output / f"{slug}.json"
         output_path.write_text(json.dumps(city, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
@@ -327,13 +353,16 @@ def main() -> None:
         "schemaVersion": 1,
         "title": "Northern Paraná Urban Twin",
         "datasetMode": "model-output",
-        "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and retransformation assumptions documented in the associated research.",
+        "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and reference-parcel assumptions documented in the associated research.",
         "gridSizeM": args.grid_size_m,
+        "dataYear": DATA_YEAR,
+        "modelConfiguration": MODEL_CONFIGURATION,
+        "referenceParcelAreaM2": REFERENCE_PARCEL_AREA_M2,
         "crs": "EPSG:4326",
         "sourceCrs": args.utm_crs,
         "modelLabels": {
             "landCover": "DINOv2 ViT-L/14 + LoRA",
-            "landValue": "TabPFN v2 — median unit urban land value",
+            "landValue": "TabPFN v2 — median unit urban land value (configuration 60)",
         },
         "classes": [{"key": key, "label": CLASS_LABELS[key], "index": CLASS_INDEX[key]} for key in CLASS_KEYS],
         "globalStats": {

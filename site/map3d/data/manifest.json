@@ -2,13 +2,16 @@
   "schemaVersion": 1,
   "title": "Northern Paraná Urban Twin",
   "datasetMode": "model-output",
-  "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and retransformation assumptions documented in the associated research.",
+  "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and reference-parcel assumptions documented in the associated research.",
   "gridSizeM": 109.45,
+  "dataYear": 2024,
+  "modelConfiguration": 60,
+  "referenceParcelAreaM2": 450,
   "crs": "EPSG:4326",
   "sourceCrs": "EPSG:29192",
   "modelLabels": {
     "landCover": "DINOv2 ViT-L/14 + LoRA",
-    "landValue": "TabPFN v2 — median unit urban land value"
+    "landValue": "TabPFN v2 — median unit urban land value (configuration 60)"
   },
   "classes": [
     {
@@ -65,10 +68,10 @@
   "globalStats": {
     "cities": 12,
     "cells": 73399,
-    "min": 314.71,
-    "median": 604.57,
-    "p90": 1113.81,
-    "max": 3650.38,
+    "min": 232.75,
+    "median": 555.4,
+    "p90": 1104.98,
+    "max": 3976.42,
     "classCounts": {
       "bare": 2091,
       "bush": 3003,
@@ -88,29 +91,29 @@
       "name": "Londrina",
       "center": [
         -51.164492,
-        -23.318439
+        -23.318496
       ],
       "bounds": [
         [
           -51.247999,
-          -23.440083
+          -23.440139
         ],
         [
-          -51.08063,
-          -23.23518
+          -51.080629,
+          -23.235237
         ]
       ],
       "stats": {
         "cells": 18384,
-        "min": 341.94,
-        "p10": 537.67,
-        "median": 755.72,
-        "mean": 924.07,
-        "p90": 1575.04,
-        "max": 3650.38,
+        "min": 270.34,
+        "p10": 475.19,
+        "median": 783.55,
+        "mean": 899.79,
+        "p90": 1442.47,
+        "max": 3976.42,
         "meanConfidence": 0.917,
-        "medianMatchDistanceM": 6.24,
-        "p95MatchDistanceM": 6.27,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "lduf",
         "classCounts": {
           "bare": 575,
@@ -134,29 +137,29 @@
       "name": "Cambé",
       "center": [
         -51.265007,
-        -23.280377
+        -23.280433
       ],
       "bounds": [
         [
           -51.326609,
-          -23.334268
+          -23.334323
         ],
         [
           -51.206446,
-          -23.191346
+          -23.191402
         ]
       ],
       "stats": {
         "cells": 5922,
-        "min": 411.34,
-        "p10": 492.67,
-        "median": 626.21,
-        "mean": 631.37,
-        "p90": 760.87,
-        "max": 1088.59,
+        "min": 340.46,
+        "p10": 483.3,
+        "median": 600.85,
+        "mean": 635.37,
+        "p90": 854.92,
+        "max": 1861.39,
         "meanConfidence": 0.9311,
-        "medianMatchDistanceM": 6.17,
-        "p95MatchDistanceM": 6.2,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 155,
@@ -179,30 +182,30 @@
       "slug": "ibipora",
       "name": "Ibiporã",
       "center": [
-        -51.053311,
-        -23.260896
+        -51.05331,
+        -23.260953
       ],
       "bounds": [
         [
-          -51.097226,
-          -23.304382
+          -51.097225,
+          -23.304439
         ],
         [
-          -51.006031,
-          -23.181156
+          -51.00603,
+          -23.181212
         ]
       ],
       "stats": {
         "cells": 3916,
-        "min": 375.72,
-        "p10": 450.43,
-        "median": 641.02,
-        "mean": 636.57,
-        "p90": 819.23,
-        "max": 1309.23,
+        "min": 286.59,
+        "p10": 355.5,
+        "median": 503.38,
+        "mean": 546.01,
+        "p90": 832.89,
+        "max": 1182.82,
         "meanConfidence": 0.9191,
-        "medianMatchDistanceM": 6.23,
-        "p95MatchDistanceM": 6.24,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 103,
@@ -225,30 +228,30 @@
       "slug": "rolandia",
       "name": "Rolândia",
       "center": [
-        -51.378527,
-        -23.317625
+        -51.378528,
+        -23.31768
       ],
       "bounds": [
         [
-          -51.431613,
-          -23.359587
+          -51.431614,
+          -23.359642
         ],
         [
-          -51.325398,
-          -23.27584
+          -51.325399,
+          -23.275895
         ]
       ],
       "stats": {
         "cells": 3780,
-        "min": 340.71,
-        "p10": 424.03,
-        "median": 496.38,
-        "mean": 525.13,
-        "p90": 699.79,
-        "max": 856.53,
+        "min": 251.48,
+        "p10": 323.17,
+        "median": 383.44,
+        "mean": 437.62,
+        "p90": 637.32,
+        "max": 1453.74,
         "meanConfidence": 0.9095,
-        "medianMatchDistanceM": 6.1,
-        "p95MatchDistanceM": 6.11,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 100,
@@ -271,30 +274,30 @@
       "slug": "arapongas",
       "name": "Arapongas",
       "center": [
-        -51.446632,
-        -23.413706
+        -51.446633,
+        -23.413761
       ],
       "bounds": [
         [
-          -51.513089,
-          -23.509081
+          -51.513091,
+          -23.509137
         ],
         [
-          -51.384344,
-          -23.342709
+          -51.384345,
+          -23.342764
         ]
       ],
       "stats": {
         "cells": 10696,
-        "min": 360.03,
-        "p10": 466.83,
-        "median": 543.08,
-        "mean": 562.84,
-        "p90": 682.93,
-        "max": 1088.87,
+        "min": 311.67,
+        "p10": 403.35,
+        "median": 469.16,
+        "mean": 506.68,
+        "p90": 623.64,
+        "max": 2356.48,
         "meanConfidence": 0.9395,
-        "medianMatchDistanceM": 6.11,
-        "p95MatchDistanceM": 6.15,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 180,
@@ -317,30 +320,30 @@
       "slug": "apucarana",
       "name": "Apucarana",
       "center": [
-        -51.45568,
-        -23.556397
+        -51.455681,
+        -23.556454
       ],
       "bounds": [
         [
-          -51.526212,
-          -23.603158
+          -51.526213,
+          -23.603216
         ],
         [
-          -51.388882,
-          -23.503827
+          -51.388884,
+          -23.503882
         ]
       ],
       "stats": {
         "cells": 9062,
-        "min": 314.71,
-        "p10": 381.01,
-        "median": 439.88,
-        "mean": 467.18,
-        "p90": 554.1,
-        "max": 1625.03,
+        "min": 255.33,
+        "p10": 296.71,
+        "median": 338.85,
+        "mean": 378.78,
+        "p90": 479.22,
+        "max": 1822.67,
         "meanConfidence": 0.9087,
-        "medianMatchDistanceM": 6.3,
-        "p95MatchDistanceM": 6.41,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 218,
@@ -363,30 +366,30 @@
       "slug": "cambira",
       "name": "Cambira",
       "center": [
-        -51.578393,
-        -23.600171
+        -51.578395,
+        -23.600231
       ],
       "bounds": [
         [
-          -51.591376,
-          -23.608308
+          -51.591377,
+          -23.608368
         ],
         [
-          -51.5667,
-          -23.587662
+          -51.566701,
+          -23.587722
         ]
       ],
       "stats": {
         "cells": 238,
-        "min": 358.85,
-        "p10": 406.27,
-        "median": 459.61,
-        "mean": 458.63,
-        "p90": 506.13,
-        "max": 568.12,
+        "min": 318.04,
+        "p10": 336.71,
+        "median": 401.25,
+        "mean": 406.69,
+        "p90": 490.42,
+        "max": 599.52,
         "meanConfidence": 0.9413,
-        "medianMatchDistanceM": 6.67,
-        "p95MatchDistanceM": 6.71,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "lduf",
         "classCounts": {
           "bare": 8,
@@ -409,30 +412,30 @@
       "slug": "jandaia",
       "name": "Jandaia do Sul",
       "center": [
-        -51.64058,
-        -23.599081
+        -51.640581,
+        -23.599143
       ],
       "bounds": [
         [
-          -51.675836,
-          -23.637203
+          -51.675837,
+          -23.637266
         ],
         [
-          -51.600734,
-          -23.574285
+          -51.600735,
+          -23.574347
         ]
       ],
       "stats": {
         "cells": 1696,
-        "min": 354.14,
-        "p10": 396.89,
-        "median": 474.04,
-        "mean": 479.06,
-        "p90": 559.82,
-        "max": 733.45,
+        "min": 316.3,
+        "p10": 353.97,
+        "median": 423.27,
+        "mean": 447.29,
+        "p90": 570.69,
+        "max": 852.95,
         "meanConfidence": 0.8811,
-        "medianMatchDistanceM": 6.83,
-        "p95MatchDistanceM": 6.91,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 169,
@@ -455,30 +458,30 @@
       "slug": "mandaguari",
       "name": "Mandaguari",
       "center": [
-        -51.693186,
-        -23.519893
+        -51.693187,
+        -23.519954
       ],
       "bounds": [
         [
           -51.752873,
-          -23.578447
+          -23.578508
         ],
         [
-          -51.641292,
-          -23.491889
+          -51.641293,
+          -23.491948
         ]
       ],
       "stats": {
         "cells": 3528,
-        "min": 474.3,
-        "p10": 515.06,
-        "median": 557.58,
-        "mean": 566.88,
-        "p90": 640.18,
-        "max": 752.09,
+        "min": 278.28,
+        "p10": 330.84,
+        "median": 377.86,
+        "mean": 419.35,
+        "p90": 566.26,
+        "max": 1128.75,
         "meanConfidence": 0.9347,
-        "medianMatchDistanceM": 6.75,
-        "p95MatchDistanceM": 6.81,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 66,
@@ -502,29 +505,29 @@
       "name": "Marialva",
       "center": [
         -51.803994,
-        -23.480742
+        -23.480803
       ],
       "bounds": [
         [
-          -51.850928,
-          -23.50993
+          -51.850927,
+          -23.509992
         ],
         [
           -51.761878,
-          -23.448919
+          -23.44898
         ]
       ],
       "stats": {
         "cells": 2304,
-        "min": 361.85,
-        "p10": 407.28,
-        "median": 485.85,
-        "mean": 495.91,
-        "p90": 609.37,
-        "max": 706.41,
+        "min": 232.75,
+        "p10": 335.33,
+        "median": 415.37,
+        "mean": 457.39,
+        "p90": 634.02,
+        "max": 1433.31,
         "meanConfidence": 0.9047,
-        "medianMatchDistanceM": 6.79,
-        "p95MatchDistanceM": 6.82,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "crop",
         "classCounts": {
           "bare": 85,
@@ -548,29 +551,29 @@
       "name": "Sarandi",
       "center": [
         -51.868812,
-        -23.446703
+        -23.446764
       ],
       "bounds": [
         [
-          -51.89977,
-          -23.483137
+          -51.899769,
+          -23.483199
         ],
         [
           -51.845052,
-          -23.411284
+          -23.411345
         ]
       ],
       "stats": {
         "cells": 2348,
-        "min": 346.15,
-        "p10": 438.6,
-        "median": 560.12,
-        "mean": 635.85,
-        "p90": 944.84,
-        "max": 1133.34,
+        "min": 297.04,
+        "p10": 366.96,
+        "median": 507.68,
+        "mean": 559.56,
+        "p90": 816.23,
+        "max": 1390.92,
         "meanConfidence": 0.923,
-        "medianMatchDistanceM": 6.79,
-        "p95MatchDistanceM": 6.84,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "lduf",
         "classCounts": {
           "bare": 76,
@@ -593,30 +596,30 @@
       "slug": "maringa",
       "name": "Maringá",
       "center": [
-        -51.947242,
-        -23.426692
+        -51.947241,
+        -23.426753
       ],
       "bounds": [
         [
-          -52.033232,
-          -23.490478
+          -52.03323,
+          -23.490541
         ],
         [
           -51.859423,
-          -23.364472
+          -23.364532
         ]
       ],
       "stats": {
         "cells": 11525,
-        "min": 419.26,
-        "p10": 642.94,
-        "median": 892.76,
-        "mean": 1030.28,
-        "p90": 1693.99,
-        "max": 3076.15,
+        "min": 331.96,
+        "p10": 596.99,
+        "median": 875.1,
+        "mean": 996.33,
+        "p90": 1531.97,
+        "max": 3612.35,
         "meanConfidence": 0.9063,
-        "medianMatchDistanceM": 6.81,
-        "p95MatchDistanceM": 6.93,
+        "medianMatchDistanceM": 0.0,
+        "p95MatchDistanceM": 0.0,
         "dominantClass": "lduf",
         "classCounts": {
           "bare": 356,

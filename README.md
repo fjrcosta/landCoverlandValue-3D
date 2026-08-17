@@ -3,7 +3,7 @@
 A GitHub Pages–ready 3D web application that combines the two outputs used in `LandValue_TabPFN_LandCover_DinoLoRA.ipynb`:
 
 - **Urban land-cover classification:** DINOv2 ViT-L/14 + LoRA, ten mutually exclusive classes and classification confidence.
-- **Median unit urban land value:** TabPFN v2 predictions on a 109.45 m grid, displayed in R$/m².
+- **Median unit urban land value:** TabPFN v2 configuration-60 predictions for a 450 m² reference parcel on a 109.45 m grid, displayed in R$/m².
 
 The default **Integrated 3D** view encodes both variables in the same object:
 
@@ -70,8 +70,8 @@ raw/
 │   ├── inference_results_cambe.csv
 │   └── ...
 └── land_value/
-    ├── predicoes_unit_Londrina.csv
-    ├── predicoes_unit_Cambe.csv
+    ├── inferencia_Londrina_cfg60_450m2.csv
+    ├── inferencia_Cambe_cfg60_450m2.csv
     └── ...
 ```
 
@@ -92,7 +92,9 @@ Land-value files must contain:
 ```text
 utm_x
 utm_y
-price_predicted
+unit_q50
+configuracao
+area_m2
 ```
 
 ### 2. Install the Python dependencies
@@ -109,21 +111,17 @@ pip install -r scripts/requirements.txt
 python scripts/build_data.py \
   --land-cover-dir raw/land_cover \
   --land-value-dir raw/land_value \
+  --land-value-pattern 'inferencia_*_cfg60_450m2.csv' \
   --output-dir site/map3d/data \
   --utm-crs EPSG:29192 \
-  --price-scale log \
   --grid-size-m 109.45
 ```
 
 This overwrites `site/map3d/data/manifest.json` and the files under `site/map3d/data/cities/`. The application badge changes automatically from **Demo data** to **Model output**.
 
-The default `--price-scale log` reproduces the notebook operation:
-
-```python
-price_real = np.exp(price_predicted)
-```
-
-If the CSV already stores R$/m², use `--price-scale real`.
+The converter validates that every land-value record uses configuration 60 and
+the 450 m² reference parcel. The `unit_q50` column is already expressed in
+R$/m² and is therefore used directly, without exponentiation.
 
 ### Spatial association
 
@@ -165,7 +163,7 @@ https://fjrcosta.github.io/landCoverlandValue-3D/
 
 This viewer is an analytical 3D representation, not a photogrammetric reconstruction or cadastral building model. The extrusion heights are deliberately exaggerated and represent the relative intensity of predicted land value, not physical elevation.
 
-The preprocessing pipeline directly exponentiates log-scale predictions to remain consistent with the notebook. If the final statistical protocol adopts Duan smearing, a lognormal correction or another retransformation estimator, modify the `prices` calculation in `scripts/build_data.py` before publication.
+The preprocessing pipeline uses the model-60 `unit_q50` estimates directly in R$/m². These estimates correspond to the 450 m² reference parcel used during inference.
 
 The nearest-centre association is appropriate when both products represent approximately commensurate regular patches. Before publication, inspect the recorded match-distance distribution and verify grid alignment, edge behaviour and CRS assumptions.
 

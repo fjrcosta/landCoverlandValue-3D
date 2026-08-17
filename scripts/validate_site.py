@@ -35,6 +35,11 @@ def main() -> None:
             fail(f"index.html is missing #{element_id}")
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("datasetMode") == "model-output":
+        if manifest.get("modelConfiguration") != 60:
+            fail("Model-output manifest does not identify configuration 60")
+        if manifest.get("referenceParcelAreaM2") != 450:
+            fail("Model-output manifest does not identify the 450 m² reference parcel")
     classes = manifest.get("classes", [])
     cities = manifest.get("cities", [])
     if len(classes) != 10:
