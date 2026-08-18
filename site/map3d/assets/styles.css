@@ -215,6 +215,13 @@ button { color: inherit; }
 .method-grid div { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
 .method-grid strong { display: block; font-size: 11px; margin-bottom: 5px; color: var(--accent); }
 .method-grid span { color: var(--muted); font-size: 11px; line-height: 1.45; }
+.publication-notes, .institutional-notes { margin: 18px 0; padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
+.institutional-notes > p { margin: 0 0 13px; color: #b7c4d4; font-size: 11px; line-height: 1.55; }
+.publication-notes h3, .institutional-notes h3 { margin: 0 0 9px; color: var(--accent); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+.reference-list, .institutional-notes ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+.reference-list li + li { margin-top: 8px; }
+.reference-list a, .institutional-notes a { color: #60a5fa; text-decoration: none; }
+.reference-list a:hover, .institutional-notes a:hover { text-decoration: underline; }
 .dialog-warning { padding: 12px; border-left: 3px solid var(--warning); background: rgba(251,191,36,.08); color: #fde7a5; font-size: 11px; line-height: 1.5; }
 .dialog-footnote { font-size: 10px !important; color: #718299 !important; }
 
