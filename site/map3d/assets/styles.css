@@ -53,14 +53,14 @@ button { color: inherit; }
   padding: 10px 12px 10px 16px;
 }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.brand h1 { font-size: 17px; line-height: 1.1; margin: 0 0 4px; letter-spacing: .01em; }
-.brand p { color: var(--muted); font-size: 11px; margin: 0; letter-spacing: .055em; text-transform: uppercase; }
-.brand-mark { width: 34px; height: 34px; position: relative; display: flex; align-items: end; gap: 3px; transform: skewY(-8deg); }
-.brand-mark span { width: 8px; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, var(--accent), var(--accent-2)); box-shadow: 0 0 14px rgba(94, 234, 212, .35); }
-.brand-mark span:nth-child(1) { height: 14px; }
-.brand-mark span:nth-child(2) { height: 25px; }
-.brand-mark span:nth-child(3) { height: 34px; }
+.brand h1 { font-size: 16px; line-height: 1.1; margin: 0 0 3px; letter-spacing: .01em; }
+.brand p { color: #c3cfdd; font-size: 10px; margin: 0 0 2px; letter-spacing: .055em; text-transform: uppercase; }
+.brand-meta { display: block; color: var(--muted); font-size: 9px; letter-spacing: .045em; }
+.brand-mark { box-sizing: border-box; width: 42px; height: 42px; padding: 4px; flex: 0 0 auto; object-fit: contain; border-radius: 9px; background: linear-gradient(135deg, #f9b233, #d68e20); box-shadow: 0 0 16px rgba(249,178,51,.18); }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
+.basemap-control { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.basemap-control select { height: 36px; color: var(--text); background: rgba(255,255,255,.06); border: 1px solid var(--line); border-radius: 10px; padding: 0 28px 0 10px; outline: none; cursor: pointer; }
+.basemap-control select:focus { border-color: rgba(94,234,212,.55); box-shadow: 0 0 0 3px rgba(94,234,212,.10); }
 
 .badge { padding: 6px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; border: 1px solid currentColor; }
 .badge-warning { color: var(--warning); background: rgba(251, 191, 36, .10); }
@@ -199,12 +199,18 @@ button { color: inherit; }
 
 .error-banner { position: absolute; z-index: 60; left: 50%; top: 100px; transform: translateX(-50%); max-width: 620px; background: rgba(80, 17, 29, .96); border: 1px solid rgba(251,113,133,.55); color: #ffe4e9; padding: 12px 16px; border-radius: 12px; box-shadow: var(--shadow); font-size: 12px; }
 
-.about-dialog { border: 0; padding: 0; background: transparent; max-width: 720px; width: calc(100% - 32px); color: var(--text); }
+.about-dialog { border: 0; padding: 0; background: transparent; max-width: 720px; width: calc(100% - 32px); max-height: calc(100vh - 32px); color: var(--text); }
 .about-dialog::backdrop { background: rgba(1,6,12,.72); backdrop-filter: blur(8px); }
-.about-card { position: relative; padding: 26px; border-radius: 20px; background: #0b1727; border: 1px solid var(--line-strong); box-shadow: 0 30px 90px rgba(0,0,0,.55); }
+.about-card { position: relative; padding: 26px; max-height: calc(100vh - 32px); overflow-y: auto; border-radius: 20px; background: #0b1727; border: 1px solid var(--line-strong); box-shadow: 0 30px 90px rgba(0,0,0,.55); }
+.institution-header { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin: -26px -26px 24px; padding: 22px 26px; border-radius: 20px 20px 0 0; background: linear-gradient(105deg, #f9b233 0%, #e59c28 48%, #050504 100%); }
+.institution-header img { display: block; height: auto; }
+.institution-header .logo-uel { width: min(390px, 72%); }
+.program-row { display: flex; align-items: center; gap: 14px; }
+.institution-header .logo-ppu { width: 70px; flex: 0 0 auto; }
+.program-row p { margin: 0; color: #080808; font-size: 17px; font-weight: 600; line-height: 1.25; }
 .about-card h2 { margin: 6px 0 12px; font-size: 24px; }
 .about-card > p { color: #b7c4d4; line-height: 1.65; font-size: 13px; }
-.dialog-close { position: absolute; right: 14px; top: 12px; border: 0; background: none; color: var(--muted); font-size: 26px; cursor: pointer; }
+.dialog-close { position: absolute; z-index: 2; right: 14px; top: 12px; border: 0; background: rgba(0,0,0,.28); width: 32px; height: 32px; border-radius: 50%; color: #fff; font-size: 26px; line-height: 28px; cursor: pointer; }
 .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
 .method-grid div { padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,.025); }
 .method-grid strong { display: block; font-size: 11px; margin-bottom: 5px; color: var(--accent); }
@@ -224,7 +230,13 @@ button { color: inherit; }
 @media (max-width: 720px) {
   .topbar { top: 8px; left: 8px; right: 8px; min-height: 58px; }
   .brand h1 { font-size: 14px; }
-  .brand p, .badge, #tourButton { display: none; }
+  .brand p, .brand-meta, .badge, #tourButton { display: none; }
+  .basemap-control > span { display: none; }
+  .basemap-control select { width: 94px; padding-left: 8px; }
   .control-panel { top: auto; left: 8px; right: 8px; bottom: 8px; width: auto; height: 40vh; }
   .method-grid { grid-template-columns: 1fr; }
+  .institution-header { padding: 18px 20px; }
+  .institution-header .logo-uel { width: min(330px, 88%); }
+  .institution-header .logo-ppu { width: 54px; }
+  .program-row p { font-size: 13px; }
 }

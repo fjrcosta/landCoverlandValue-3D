@@ -32,6 +32,8 @@ const VALUE_STOPS = [
 
 const REGION_BOUNDS = [[-52.04, -23.69], [-50.94, -23.18]];
 const INITIAL_VIEW = { center: [-51.50, -23.42], zoom: 9.25, pitch: 52, bearing: -17 };
+const SATELLITE_SOURCE_ID = 'esri-world-imagery';
+const SATELLITE_LAYER_ID = 'esri-world-imagery-layer';
 
 const state = {
   manifest: null,
@@ -56,7 +58,7 @@ const dom = {};
 
 function bindDom() {
   const ids = [
-    'datasetBadge', 'tourButton', 'resetButton', 'cellCount', 'citySelect',
+    'datasetBadge', 'basemapSelect', 'tourButton', 'resetButton', 'citySelect',
     'heightScale', 'heightScaleOutput', 'colorBlend', 'colorBlendOutput',
     'classFilters', 'toggleClasses', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
@@ -224,7 +226,6 @@ async function loadSelection() {
   const token = Symbol('load');
   state.loadToken = token;
   hideError();
-  dom.cellCount.textContent = 'loading…';
 
   const metas = state.selectedCity === 'all'
     ? state.manifest.cities
@@ -342,7 +343,6 @@ function updateScene() {
     effects: [lightingEffect],
     parameters: { depthTest: true }
   });
-  dom.cellCount.textContent = `${formatNumber(data.length)} cells`;
 }
 
 function handleHover(info) {
@@ -561,6 +561,10 @@ function wireEvents() {
     else startTour();
   });
 
+  dom.basemapSelect.addEventListener('change', () => {
+    setBasemap(dom.basemapSelect.value);
+  });
+
   dom.downloadButton.addEventListener('click', exportVisibleData);
   dom.aboutButton.addEventListener('click', () => dom.aboutDialog.showModal());
   dom.aboutDialog.addEventListener('click', event => {
@@ -690,6 +694,35 @@ function setBuildingsVisibility() {
   state.map.setLayoutProperty(state.buildingLayerId, 'visibility', state.showBuildings ? 'visible' : 'none');
 }
 
+function addSatelliteBasemap() {
+  if (state.map.getSource(SATELLITE_SOURCE_ID)) return;
+  state.map.addSource(SATELLITE_SOURCE_ID, {
+    type: 'raster',
+    tiles: ['https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
+    tileSize: 256,
+    maxzoom: 19,
+    attribution: 'Sources: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+  });
+
+  const firstLabel = state.map.getStyle().layers.find(layer => layer.type === 'symbol');
+  state.map.addLayer({
+    id: SATELLITE_LAYER_ID,
+    type: 'raster',
+    source: SATELLITE_SOURCE_ID,
+    layout: { visibility: 'none' },
+    paint: { 'raster-opacity': 1 }
+  }, firstLabel?.id);
+}
+
+function setBasemap(value) {
+  if (!state.map?.getLayer(SATELLITE_LAYER_ID)) return;
+  state.map.setLayoutProperty(
+    SATELLITE_LAYER_ID,
+    'visibility',
+    value === 'satellite' ? 'visible' : 'none'
+  );
+}
+
 function initMap() {
   if (!window.maplibregl) throw new Error('MapLibre GL JS did not load.');
   if (!window.deck) throw new Error('deck.gl did not load.');
@@ -716,6 +749,7 @@ function initMap() {
     state.map.once('load', () => {
       state.overlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
       state.map.addControl(state.overlay);
+      addSatelliteBasemap();
       add3DBuildings();
       resetRegionalView();
       resolve();
