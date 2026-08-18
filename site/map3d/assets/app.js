@@ -157,7 +157,7 @@ function classLabel(cellOrKey) {
 }
 
 function cityNameFromCell(cell) {
-  return state.manifest.cities[cell[6]]?.name || 'Unknown city';
+  return state.manifest.cities[cell[9]]?.name || 'Unknown city';
 }
 
 function normalizePrice(price) {
@@ -211,7 +211,7 @@ async function loadCity(cityMeta, cityIndex) {
     const promise = fetchJson(`./${cityMeta.file}`).then(city => {
       city.cells.forEach(cell => {
         // Append city index once so compact source files remain reusable.
-        if (cell.length < 7) cell.push(cityIndex);
+        if (cell.length < 10) cell.push(cityIndex);
       });
       return city;
     });
@@ -362,19 +362,23 @@ function renderHoverCard(info, pinned = false) {
   const cell = info.object;
   const key = classKey(cell);
   const confidence = cell[4];
-  const distance = cell[5];
+  const pointwiseWidth = cell[6];
+  const q10 = cell[7];
+  const q90 = cell[8];
   dom.hoverCard.innerHTML = `
     <h3>${cityNameFromCell(cell)}</h3>
     <div class="hover-row"><span>Land-cover class</span><strong class="hover-class"><i style="background:${CLASS_COLORS[key]}"></i>${classLabel(key)}</strong></div>
     <div class="hover-row"><span>Classification confidence</span><strong>${(confidence * 100).toFixed(1)}%</strong></div>
-    <div class="hover-row"><span>Median unit land value</span><strong>${formatCurrency(cell[2])}</strong></div>
-    <div class="hover-row"><span>Spatial match distance</span><strong>${distance.toFixed(1)} m</strong></div>
+    <div class="hover-row"><span>10th predictive quantile (Q₀.₁₀)</span><strong>${formatCurrency(q10)}</strong></div>
+    <div class="hover-row"><span>Median unit land value (Q₀.₅₀)</span><strong>${formatCurrency(cell[2])}</strong></div>
+    <div class="hover-row"><span>90th predictive quantile (Q₀.₉₀)</span><strong>${formatCurrency(q90)}</strong></div>
+    <div class="hover-row"><span>Normalised interval width (wᵢ*)</span><strong>${pointwiseWidth.toFixed(4)}</strong></div>
     ${pinned ? '<div class="hover-row"><span>Selection</span><strong>pinned</strong></div>' : ''}
   `;
   dom.hoverCard.hidden = false;
   const pad = 14;
   const width = 230;
-  const height = 165;
+  const height = 225;
   const x = Math.min(window.innerWidth - width - pad, Math.max(pad, info.x + 18));
   const y = Math.min(window.innerHeight - height - pad, Math.max(pad, info.y + 18));
   dom.hoverCard.style.left = `${x}px`;
@@ -574,10 +578,10 @@ function wireEvents() {
 
 function exportVisibleData() {
   const data = filteredCells();
-  const rows = ['city,longitude,latitude,predicted_value_brl_m2,land_cover_class,classification_confidence,match_distance_m'];
+  const rows = ['city,longitude,latitude,predicted_value_q50_brl_m2,land_cover_class,classification_confidence,match_distance_m,normalized_pointwise_interval_width,predicted_value_q10_brl_m2,predicted_value_q90_brl_m2'];
   data.forEach(cell => {
     rows.push([
-      JSON.stringify(cityNameFromCell(cell)), cell[0], cell[1], cell[2], classKey(cell), cell[4], cell[5]
+      JSON.stringify(cityNameFromCell(cell)), cell[0], cell[1], cell[2], classKey(cell), cell[4], cell[5], cell[6], cell[7], cell[8]
     ].join(','));
   });
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });

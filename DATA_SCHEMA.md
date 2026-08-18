@@ -2,7 +2,7 @@
 
 ## `site/map3d/data/manifest.json`
 
-The manifest records dataset status, class definitions, global statistics and one entry per city.
+The manifest records dataset status, class definitions, global statistics and one entry per city. Schema version 3 includes the lower, median and upper predictive quantiles together with the normalized pointwise predictive-interval width for every cell.
 
 Important fields:
 
@@ -26,6 +26,9 @@ index  meaning
 3      urban land-cover class index
 4      DINOv2–LoRA classification confidence, 0–1
 5      nearest-neighbour association distance, metres
+6      normalized pointwise predictive-interval width, w_i* = w_i / R
+7      predicted 10th quantile of unit land value, R$/m²
+8      predicted 90th quantile of unit land value, R$/m²
 ```
 
-The browser appends a transient seventh element containing the city index. It is not stored in the source JSON.
+The browser appends a transient tenth element containing the city index. It is not stored in the source JSON.

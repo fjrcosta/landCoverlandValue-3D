@@ -10,7 +10,7 @@ The default **Integrated 3D** view encodes both variables in the same object:
 - prism **height** = predicted median unit land value;
 - prism **categorical color** = urban land-cover class;
 - optional continuous **value tint** = the notebook’s blue-to-red `tim.colors()`-like palette;
-- tooltip = city, class, confidence, value and spatial-join distance.
+- tooltip = city, class, confidence, predictive quantiles and normalized pointwise interval width.
 
 The repository contains a deterministic synthetic demonstration dataset so the interface works immediately. It is clearly labelled **Demo data** in the application. Replace it with the model CSV outputs before scientific interpretation.
 
@@ -39,7 +39,7 @@ compact city JSON ── browser fetch ── deck.gl GridCellLayer ── MapLi
 The preprocessing step performs the computationally expensive spatial association once. The browser receives compact records of the form:
 
 ```text
-[longitude, latitude, value_R$/m², class_index, confidence, match_distance_m]
+[longitude, latitude, value_q50_R$/m², class_index, confidence, match_distance_m, normalized_pointwise_interval_width, value_q10_R$/m², value_q90_R$/m²]
 ```
 
 This avoids sending two full polygon collections and avoids performing approximately 73,000 × 73,000 spatial comparisons in the browser.
@@ -92,7 +92,10 @@ Land-value files must contain:
 ```text
 utm_x
 utm_y
+unit_q10
 unit_q50
+unit_q90
+pinaw_pontual
 configuracao
 area_m2
 ```
@@ -127,7 +130,7 @@ R$/m² and is therefore used directly, without exponentiation.
 
 The land-cover patch centres are transformed from EPSG:4326 to a metric CRS. The TabPFN UTM points are transformed from EPSG:29192 to EPSG:4326 and then into the same metric CRS. A `scipy.spatial.cKDTree` nearest-neighbour query assigns one land-cover class to each land-value cell.
 
-The web tooltip exposes the resulting match distance. The manifest also stores the median, 95th percentile and number of associations beyond the diagnostic threshold. Change the threshold with:
+The match distance is retained as an exported alignment diagnostic. The manifest also stores its median, 95th percentile and number of associations beyond the diagnostic threshold. Change the threshold with:
 
 ```bash
 --max-match-distance 250

@@ -9,10 +9,12 @@ predicted_class, prediction_confidence and either:
 
 Expected land-value columns
 ---------------------------
-utm_x, utm_y, unit_q50, configuracao, area_m2
+utm_x, utm_y, unit_q10, unit_q50, unit_q90, pinaw_pontual,
+configuracao, area_m2
 
 The model-60 unit_q50 estimate is already expressed in R$/m² and is used
-directly, without exponentiation.
+directly, without exponentiation. The pinaw_pontual field is the normalized
+pointwise predictive-interval width, w_i* = w_i / R, calculated on the log scale.
 The script joins each land-value grid-cell centre to its nearest land-cover patch
 centre in a metric projected CRS and writes compact per-city JSON files.
 """
@@ -47,6 +49,9 @@ CLASS_LABELS = {
 CLASS_INDEX = {key: i for i, key in enumerate(CLASS_KEYS)}
 
 VALUE_COLUMN = "unit_q50"
+LOWER_VALUE_COLUMN = "unit_q10"
+UPPER_VALUE_COLUMN = "unit_q90"
+POINTWISE_WIDTH_COLUMN = "pinaw_pontual"
 MODEL_CONFIGURATION = 60
 REFERENCE_PARCEL_AREA_M2 = 450
 DATA_YEAR = 2024
@@ -209,7 +214,9 @@ def build_city(
 
     cover_required = {"predicted_class", "prediction_confidence"}
     value_required = {
-        "utm_x", "utm_y", VALUE_COLUMN, "configuracao", "area_m2"
+        "utm_x", "utm_y", LOWER_VALUE_COLUMN, VALUE_COLUMN,
+        UPPER_VALUE_COLUMN, POINTWISE_WIDTH_COLUMN,
+        "configuracao", "area_m2"
     }
     if not cover_required.issubset(cover.columns):
         raise ValueError(f"{cover_path.name} missing {sorted(cover_required - set(cover.columns))}")
@@ -242,8 +249,24 @@ def build_city(
     utm_x = pd.to_numeric(value["utm_x"], errors="coerce").to_numpy(dtype=float)
     utm_y = pd.to_numeric(value["utm_y"], errors="coerce").to_numpy(dtype=float)
     prices = pd.to_numeric(value[VALUE_COLUMN], errors="coerce").to_numpy(dtype=float)
-    valid = np.isfinite(utm_x) & np.isfinite(utm_y) & np.isfinite(prices)
-    utm_x, utm_y, prices = utm_x[valid], utm_y[valid], prices[valid]
+    lower_values = pd.to_numeric(
+        value[LOWER_VALUE_COLUMN], errors="coerce"
+    ).to_numpy(dtype=float)
+    upper_values = pd.to_numeric(
+        value[UPPER_VALUE_COLUMN], errors="coerce"
+    ).to_numpy(dtype=float)
+    pointwise_width = pd.to_numeric(
+        value[POINTWISE_WIDTH_COLUMN], errors="coerce"
+    ).to_numpy(dtype=float)
+    valid = (
+        np.isfinite(utm_x) & np.isfinite(utm_y) & np.isfinite(prices)
+        & np.isfinite(lower_values) & np.isfinite(upper_values)
+        & np.isfinite(pointwise_width) & (pointwise_width >= 0)
+    )
+    utm_x, utm_y, prices, lower_values, upper_values, pointwise_width = (
+        utm_x[valid], utm_y[valid], prices[valid], lower_values[valid],
+        upper_values[valid], pointwise_width[valid]
+    )
 
     lon, lat = value_to_wgs.transform(utm_x, utm_y)
     metric_x, metric_y = wgs_to_metric.transform(lon, lat)
@@ -253,11 +276,18 @@ def build_city(
     confidence = pd.to_numeric(cover["prediction_confidence"], errors="coerce").fillna(0).to_numpy(dtype=float)[nearest]
     finite_price = np.isfinite(prices) & (prices > 0)
     lon, lat, prices = np.asarray(lon)[finite_price], np.asarray(lat)[finite_price], prices[finite_price]
+    lower_values, upper_values = lower_values[finite_price], upper_values[finite_price]
+    pointwise_width = pointwise_width[finite_price]
     classes, confidence, distance = classes[finite_price], confidence[finite_price], distance[finite_price]
 
     records = [
-        [round(float(lo), 6), round(float(la), 6), round(float(pr), 2), CLASS_INDEX[cl], round(float(cf), 4), round(float(di), 2)]
-        for lo, la, pr, cl, cf, di in zip(lon, lat, prices, classes, confidence, distance)
+        [round(float(lo), 6), round(float(la), 6), round(float(pr), 2),
+         CLASS_INDEX[cl], round(float(cf), 4), round(float(di), 2),
+         round(float(pw), 6), round(float(q10), 2), round(float(q90), 2)]
+        for lo, la, pr, cl, cf, di, pw, q10, q90 in zip(
+            lon, lat, prices, classes, confidence, distance, pointwise_width,
+            lower_values, upper_values
+        )
     ]
     if not records:
         raise ValueError(f"No valid value records in {value_path.name}")
@@ -269,7 +299,7 @@ def build_city(
     lons = [r[0] for r in records]
     lats = [r[1] for r in records]
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 3,
         "source": "model-output",
         "slug": slug,
         "name": CITY_NAMES[slug],
@@ -350,7 +380,7 @@ def main() -> None:
 
     prices = np.asarray(all_prices, dtype=float)
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 3,
         "title": "Northern Paraná Urban Twin",
         "datasetMode": "model-output",
         "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and reference-parcel assumptions documented in the associated research.",

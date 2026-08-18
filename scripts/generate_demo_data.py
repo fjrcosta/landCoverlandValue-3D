@@ -114,12 +114,17 @@ def make_city(slug: str, cfg: tuple) -> dict:
 
             confidence_base = 0.94 if klass in {"water", "hduf", "industrial"} else 0.88
             confidence = float(np.clip(confidence_base - 0.12 * radial + rng.normal(0, 0.035), 0.56, 0.995))
+            pointwise_width = float(np.clip(0.16 + 0.24 * radial + rng.normal(0, 0.025), 0.03, 0.75))
+            q10 = price * math.exp(-0.5 * pointwise_width)
+            q90 = price * math.exp(0.5 * pointwise_width)
 
             x = x0 + ix * GRID_SIZE_M
             y = y0 + iy * GRID_SIZE_M
             lon, lat = UTM_TO_WGS.transform(x, y)
-            # Compact tuple: longitude, latitude, value R$/m², class index, confidence, join distance m
-            records.append([round(lon, 6), round(lat, 6), round(price, 2), CLASS_INDEX[klass], round(confidence, 4), 0.0])
+            # Compact tuple: longitude, latitude, value R$/m², class index,
+            # confidence, join distance m, normalized pointwise interval width,
+            # lower and upper predictive quantiles in R$/m²
+            records.append([round(lon, 6), round(lat, 6), round(price, 2), CLASS_INDEX[klass], round(confidence, 4), 0.0, round(pointwise_width, 6), round(q10, 2), round(q90, 2)])
             prices.append(price)
             confidences.append(confidence)
             counts[klass] += 1
@@ -140,7 +145,7 @@ def make_city(slug: str, cfg: tuple) -> dict:
         "classCounts": counts,
     }
     return {
-        "schemaVersion": 1,
+        "schemaVersion": 3,
         "source": "synthetic-demonstration",
         "slug": slug,
         "name": name,
@@ -176,7 +181,7 @@ def main() -> None:
             total_counts[key] += value
 
     manifest = {
-        "schemaVersion": 1,
+        "schemaVersion": 3,
         "title": "Northern Paraná Urban Twin",
         "datasetMode": "demo",
         "warning": "Synthetic demonstration data. Replace with model-output data before scientific interpretation.",

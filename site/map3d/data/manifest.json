@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 3,
   "title": "Northern Paraná Urban Twin",
   "datasetMode": "model-output",
   "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and reference-parcel assumptions documented in the associated research.",

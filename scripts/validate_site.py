@@ -35,6 +35,8 @@ def main() -> None:
             fail(f"index.html is missing #{element_id}")
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("schemaVersion") != 3:
+        fail("Manifest does not use schema version 3")
     if manifest.get("datasetMode") == "model-output":
         if manifest.get("modelConfiguration") != 60:
             fail("Model-output manifest does not identify configuration 60")
@@ -57,15 +59,18 @@ def main() -> None:
         if not city_path.exists():
             fail(f"Missing city data file {meta['file']}")
         city = json.loads(city_path.read_text(encoding="utf-8"))
+        if city.get("schemaVersion") != 3:
+            fail(f"{meta['file']} does not use schema version 3")
         if city.get("slug") != meta.get("slug"):
             fail(f"City slug mismatch in {meta['file']}")
         cells = city.get("cells", [])
         if not cells:
             fail(f"No cells in {meta['file']}")
         for i, cell in enumerate(cells):
-            if len(cell) != 6:
-                fail(f"{meta['file']} cell {i} has {len(cell)} fields, expected 6")
-            lon, lat, price, class_index, confidence, distance = cell
+            if len(cell) != 9:
+                fail(f"{meta['file']} cell {i} has {len(cell)} fields, expected 9")
+            (lon, lat, price, class_index, confidence, distance,
+             pointwise_width, q10, q90) = cell
             if not (-180 <= lon <= 180 and -90 <= lat <= 90):
                 fail(f"Invalid coordinate in {meta['file']} cell {i}")
             if not (price > 0):
@@ -76,6 +81,10 @@ def main() -> None:
                 fail(f"Invalid confidence in {meta['file']} cell {i}")
             if distance < 0:
                 fail(f"Negative match distance in {meta['file']} cell {i}")
+            if pointwise_width < 0:
+                fail(f"Negative pointwise normalized interval width in {meta['file']} cell {i}")
+            if not (0 < q10 <= price <= q90):
+                fail(f"Invalid predictive-quantile ordering in {meta['file']} cell {i}")
         if meta.get("stats", {}).get("cells") != len(cells):
             fail(f"Cell count mismatch in manifest for {meta['slug']}")
         total += len(cells)
