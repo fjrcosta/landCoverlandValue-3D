@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Interactive 3D visualization of urban land cover and predicted unit land value across 12 cities in Northern Paraná, Brazil." />
+  <meta name="description" content="Interactive 3D visualization of urban land cover, predicted unit land value and the urban transportation network across 12 cities in Northern Paraná, Brazil." />
   <meta name="theme-color" content="#07111f" />
-  <title>Urban Land Cover and Unit Land Value | Londrina–Maringá Urban System</title>
+  <title>Urban Land Cover, Unit Land Value and Transport | Londrina–Maringá Urban System</title>
   <link rel="preconnect" href="https://tiles.openfreemap.org" crossorigin>
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20260818-2" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260827-1" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -20,7 +20,7 @@
       <div class="brand">
         <img class="brand-mark" src="./assets/logo_ppu.png" alt="PPU">
         <div>
-          <h1>Urban Land Cover and Unit Land Value</h1>
+          <h1>Urban Land Cover, Unit Land Value and Transport</h1>
           <p>Londrina–Maringá Urban System</p>
           <span class="brand-meta">Northern Paraná, Brazil · 2024</span>
         </div>
@@ -49,23 +49,31 @@
         </section>
 
         <section class="panel-section">
-          <div class="section-heading"><span>Analytical mode</span></div>
-          <div class="segmented" role="group" aria-label="Analytical mode">
-            <button class="segment active" data-mode="integrated" type="button">
-              <strong>Integrated 3D</strong><small>class color + value height</small>
-            </button>
-            <button class="segment" data-mode="cover" type="button">
+          <div class="section-heading"><span>Analytical dimensions</span></div>
+          <div class="analytical-modes" role="group" aria-label="Analytical dimensions">
+            <div class="mode-pair">
+              <button class="segment active" data-mode="all" type="button">
+                <strong>All</strong><small>all dimensions</small>
+              </button>
+              <button class="segment" data-mode="none" type="button">
+                <strong>None</strong><small>basemap only</small>
+              </button>
+            </div>
+            <button class="segment mode-row" data-mode="cover" type="button">
               <strong>Land cover</strong><small>DINOv2–LoRA</small>
             </button>
-            <button class="segment" data-mode="value" type="button">
+            <button class="segment mode-row" data-mode="value" type="button">
               <strong>Land value</strong><small>TabPFN v2</small>
+            </button>
+            <button class="segment mode-row" data-mode="transport" type="button">
+              <strong>Transport network</strong><small>OpenStreetMap</small>
             </button>
           </div>
         </section>
 
         <section class="panel-section" id="heightSection">
           <div class="range-header">
-            <label for="heightScale">Vertical exaggeration</label>
+            <label for="heightScale">Value vertical extrusion</label>
             <output id="heightScaleOutput">1.00×</output>
           </div>
           <input id="heightScale" class="range-control" type="range" min="0" max="2.5" step="0.05" value="1" />
@@ -78,12 +86,17 @@
             <output id="colorBlendOutput">22%</output>
           </div>
           <input id="colorBlend" class="range-control" type="range" min="0" max="1" step="0.01" value="0.22" />
-          <p class="microcopy"><strong>Color only:</strong> this control blends the continuous land-value palette into the categorical land-cover color. It does not alter prism height; height is controlled separately by vertical exaggeration.</p>
+          <p class="microcopy"><strong>Color only:</strong> this control blends the continuous land-value palette into the categorical land-cover color. It does not alter prism height; height is controlled separately by value vertical extrusion.</p>
         </section>
 
-        <section class="panel-section">
+        <section class="panel-section" id="landCoverFilterSection">
           <div class="section-heading"><span>Urban land-cover classes</span><button id="toggleClasses" class="text-button" type="button">Clear</button></div>
           <div id="classFilters" class="class-filters"></div>
+        </section>
+
+        <section class="panel-section" id="transportFilterSection">
+          <div class="section-heading"><span>Urban transportation network</span><button id="toggleRoadClasses" class="text-button" type="button">Clear</button></div>
+          <div id="roadFilters" class="class-filters road-filters"></div>
         </section>
 
         <section class="panel-section">
@@ -167,11 +180,12 @@
         </div>
       </header>
       <span class="eyebrow">Methodological note</span>
-      <h2>One scene, two model outputs</h2>
-      <p>The default integrated layer assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification. Prism height encodes the predicted median unit land value, while prism color encodes land-cover class. The optional value tint adds a second continuous color cue.</p>
+      <h2>One scene, three analytical dimensions</h2>
+      <p>The default All view assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification and adds the OpenStreetMap urban road hierarchy. Prism height encodes predicted median unit land value, prism color encodes land-cover class, and line color and width distinguish transport-network classes.</p>
       <div class="method-grid">
         <div><strong>Urban land cover</strong><span>DINOv2 ViT-L/14 with LoRA; 10 mutually exclusive classes and classification confidence.</span></div>
         <div><strong>Urban land value</strong><span>TabPFN v2, configuration 60; the median unit-value estimate is used directly in R$/m² for a 450 m² reference parcel.</span></div>
+        <div><strong>Urban transportation network</strong><span>OpenStreetMap drive network classified as motorway, trunk, primary, secondary and residential; duplicate directed geometries are removed for rendering.</span></div>
         <div><strong>Spatial integration</strong><span>Nearest-neighbour association in a projected metric CRS, performed offline by the preprocessing script.</span></div>
         <div><strong>Rendering</strong><span>MapLibre GL JS with selectable OpenFreeMap or Esri World Imagery basemaps and deck.gl GPU grid-cell extrusion. Static hosting; no application server is required.</span></div>
       </div>
@@ -209,12 +223,12 @@
         </ul>
       </section>
       <div id="dataWarning" class="dialog-warning"></div>
-      <p class="dialog-footnote">The visualization is an analytical representation, not a photogrammetric 3D reconstruction. Building heights depend on the basemap’s available OpenStreetMap attributes.</p>
+      <p class="dialog-footnote">Transport-network data © OpenStreetMap contributors, available under the Open Data Commons Open Database License (ODbL), snapshot 28 December 2025. The visualization is an analytical representation, not a photogrammetric 3D reconstruction.</p>
     </form>
   </dialog>
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20260818-2"></script>
+  <script type="module" src="./assets/app.js?v=20260827-1"></script>
 </body>
 </html>

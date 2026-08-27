@@ -32,3 +32,23 @@ index  meaning
 ```
 
 The browser appends a transient tenth element containing the city index. It is not stored in the source JSON.
+
+## Transportation-network data
+
+`site/map3d/data/transport/manifest.json` records the five displayed
+OpenStreetMap `highway` classes, styling, source, ODbL licence, snapshot date,
+city file index and segment counts. Transportation schema version 1 is
+independent of the analytical-cell schema.
+
+Each file under `site/map3d/data/transport/cities/` contains a compact `roads`
+array. Every road is represented as:
+
+```text
+index  meaning
+0      transport-class index from the transport manifest
+1      LineString path as [[longitude, latitude], ...], EPSG:4326
+```
+
+The preprocessing script removes duplicate directed OSM graph geometries within
+each municipality, treating a path and the same path in reverse order as one
+rendered segment.

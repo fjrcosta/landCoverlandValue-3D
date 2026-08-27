@@ -37,13 +37,17 @@ const SATELLITE_LAYER_ID = 'esri-world-imagery-layer';
 
 const state = {
   manifest: null,
+  transportManifest: null,
   cityCache: new Map(),
+  transportCache: new Map(),
   currentCells: [],
+  currentRoads: [],
   selectedCity: 'all',
-  mode: 'integrated',
+  mode: 'all',
   heightScale: 1,
   colorBlend: 0.22,
   selectedClasses: new Set(),
+  selectedRoadClasses: new Set(),
   showLabels: true,
   showBuildings: true,
   tourTimer: null,
@@ -60,7 +64,8 @@ function bindDom() {
   const ids = [
     'datasetBadge', 'basemapSelect', 'tourButton', 'resetButton', 'citySelect',
     'heightScale', 'heightScaleOutput', 'colorBlend', 'colorBlendOutput',
-    'classFilters', 'toggleClasses', 'buildingsToggle', 'labelsToggle',
+    'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
+    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
     'p10Metric', 'medianMetric', 'p90Metric', 'classMetric', 'confidenceMetric',
     'distributionTotal', 'distributionBar', 'classBreakdown', 'extentMetric', 'legendMin',
@@ -162,6 +167,14 @@ function cityNameFromCell(cell) {
   return state.manifest.cities[cell[9]]?.name || 'Unknown city';
 }
 
+function roadClassMeta(road) {
+  return state.transportManifest.classes[road[0]];
+}
+
+function cityNameFromRoad(road) {
+  return state.manifest.cities[road[2]]?.name || 'Unknown city';
+}
+
 function normalizePrice(price) {
   const stats = state.manifest.globalStats;
   const min = Math.log1p(Math.max(1, stats.min));
@@ -202,9 +215,14 @@ async function fetchJson(url) {
 }
 
 async function loadManifest() {
-  const manifest = await fetchJson('./data/manifest.json');
+  const [manifest, transportManifest] = await Promise.all([
+    fetchJson('./data/manifest.json'),
+    fetchJson('./data/transport/manifest.json')
+  ]);
   state.manifest = manifest;
+  state.transportManifest = transportManifest;
   manifest.classes.forEach(c => state.selectedClasses.add(c.key));
+  transportManifest.classes.forEach(c => state.selectedRoadClasses.add(c.key));
   return manifest;
 }
 
@@ -222,6 +240,20 @@ async function loadCity(cityMeta, cityIndex) {
   return state.cityCache.get(cityMeta.slug);
 }
 
+async function loadTransportCity(cityMeta, cityIndex) {
+  if (!state.transportCache.has(cityMeta.slug)) {
+    const promise = fetchJson(`./${cityMeta.file}`).then(city => {
+      city.roads.forEach(road => {
+        // Append city index once so compact source files remain reusable.
+        if (road.length < 3) road.push(cityIndex);
+      });
+      return city;
+    });
+    state.transportCache.set(cityMeta.slug, promise);
+  }
+  return state.transportCache.get(cityMeta.slug);
+}
+
 async function loadSelection() {
   const token = Symbol('load');
   state.loadToken = token;
@@ -232,12 +264,21 @@ async function loadSelection() {
     : state.manifest.cities.filter(city => city.slug === state.selectedCity);
 
   try {
-    const cities = await Promise.all(metas.map(meta => {
+    const cityPromise = Promise.all(metas.map(meta => {
       const idx = state.manifest.cities.findIndex(c => c.slug === meta.slug);
       return loadCity(meta, idx);
     }));
+    const transportMetas = state.selectedCity === 'all'
+      ? state.transportManifest.cities
+      : state.transportManifest.cities.filter(city => city.slug === state.selectedCity);
+    const transportPromise = Promise.all(transportMetas.map(meta => {
+      const idx = state.manifest.cities.findIndex(c => c.slug === meta.slug);
+      return loadTransportCity(meta, idx);
+    }));
+    const [cities, transportCities] = await Promise.all([cityPromise, transportPromise]);
     if (state.loadToken !== token) return;
     state.currentCells = cities.flatMap(city => city.cells);
+    state.currentRoads = transportCities.flatMap(city => city.roads);
     updateScene();
     updateStatistics();
     updateSelectionTitle();
@@ -252,10 +293,17 @@ function filteredCells() {
   return state.currentCells.filter(cell => state.selectedClasses.has(classKey(cell)));
 }
 
+function filteredRoads() {
+  return state.currentRoads.filter(road => state.selectedRoadClasses.has(roadClassMeta(road).key));
+}
+
 function updateScene() {
   if (!state.overlay || !state.manifest) return;
   const data = filteredCells();
+  const roadData = filteredRoads();
   const gridSize = state.manifest.gridSizeM || 109.45;
+  const showGrid = ['all', 'cover', 'value'].includes(state.mode);
+  const showRoads = ['all', 'transport'].includes(state.mode);
 
   const ambientLight = new deck.AmbientLight({ color: [255, 255, 255], intensity: 1.5 });
   const directionalLight = new deck.DirectionalLight({
@@ -265,7 +313,7 @@ function updateScene() {
   });
   const lightingEffect = new deck.LightingEffect({ ambientLight, directionalLight });
 
-  const gridLayer = new deck.GridCellLayer({
+  const gridLayer = showGrid ? new deck.GridCellLayer({
     id: `urban-grid-${state.mode}-${state.heightScale}-${state.colorBlend}-${state.selectedClasses.size}`,
     data,
     pickable: true,
@@ -295,7 +343,31 @@ function updateScene() {
     onClick: info => {
       if (info.object) pinHoverCard(info);
     }
-  });
+  }) : null;
+
+  const roadLayer = showRoads ? new deck.PathLayer({
+    id: `transport-network-${state.mode}-${state.selectedRoadClasses.size}`,
+    data: roadData,
+    pickable: true,
+    getPath: road => road[1].map(point => [point[0], point[1], 5]),
+    getColor: road => hexToRgb(roadClassMeta(road).color, 242),
+    getWidth: road => roadClassMeta(road).width,
+    widthUnits: 'pixels',
+    widthMinPixels: 0.65,
+    widthMaxPixels: 5,
+    jointRounded: true,
+    capRounded: true,
+    opacity: 0.96,
+    parameters: { depthTest: false },
+    updateTriggers: {
+      getColor: [...state.selectedRoadClasses],
+      getWidth: [...state.selectedRoadClasses]
+    },
+    onHover: handleRoadHover,
+    onClick: info => {
+      if (info.object) renderRoadHoverCard(info, true);
+    }
+  }) : null;
 
   const cityData = state.showLabels ? state.manifest.cities : [];
   const centerLayer = new deck.ScatterplotLayer({
@@ -339,10 +411,38 @@ function updateScene() {
   });
 
   state.overlay.setProps({
-    layers: [gridLayer, centerLayer, textLayer],
+    layers: [gridLayer, roadLayer, centerLayer, textLayer].filter(Boolean),
     effects: [lightingEffect],
     parameters: { depthTest: true }
   });
+}
+
+function handleRoadHover(info) {
+  state.hoverObject = info.object || null;
+  if (!info.object) {
+    dom.hoverCard.hidden = true;
+    return;
+  }
+  renderRoadHoverCard(info);
+}
+
+function renderRoadHoverCard(info, pinned = false) {
+  const road = info.object;
+  const meta = roadClassMeta(road);
+  dom.hoverCard.innerHTML = `
+    <h3>${cityNameFromRoad(road)}</h3>
+    <div class="hover-row"><span>Transport class</span><strong class="hover-class"><i style="background:${meta.color}"></i>${meta.label}</strong></div>
+    <div class="hover-row"><span>Source</span><strong>OpenStreetMap</strong></div>
+    ${pinned ? '<div class="hover-row"><span>Selection</span><strong>pinned</strong></div>' : ''}
+  `;
+  dom.hoverCard.hidden = false;
+  const pad = 14;
+  const width = 230;
+  const height = 130;
+  const x = Math.min(window.innerWidth - width - pad, Math.max(pad, info.x + 18));
+  const y = Math.min(window.innerHeight - height - pad, Math.max(pad, info.y + 18));
+  dom.hoverCard.style.left = `${x}px`;
+  dom.hoverCard.style.top = `${y}px`;
 }
 
 function handleHover(info) {
@@ -386,6 +486,9 @@ function renderHoverCard(info, pinned = false) {
 }
 
 function updateStatistics() {
+  const showCellStatistics = ['all', 'cover', 'value'].includes(state.mode);
+  dom.insightPanel.style.display = showCellStatistics ? '' : 'none';
+  if (!showCellStatistics) return;
   const data = filteredCells();
   const prices = data.map(d => d[2]).sort((a, b) => a - b);
   const confidences = data.map(d => d[4]);
@@ -481,6 +584,24 @@ function populateControls() {
 
   });
 
+  state.transportManifest.classes.forEach(item => {
+    const row = document.createElement('label');
+    row.className = 'class-filter';
+    row.innerHTML = `
+      <input type="checkbox" value="${item.key}" checked>
+      <span class="class-swatch road-swatch" style="background:${item.color}; height:${Math.max(3, item.width)}px"></span>
+      <span>${item.label}</span>
+    `;
+    const input = row.querySelector('input');
+    input.addEventListener('change', () => {
+      if (input.checked) state.selectedRoadClasses.add(item.key);
+      else state.selectedRoadClasses.delete(item.key);
+      updateScene();
+      updateToggleRoadClassesLabel();
+    });
+    dom.roadFilters.appendChild(row);
+  });
+
   dom.legendMin.textContent = formatCurrency(state.manifest.globalStats.min, true).replace('/m²', '');
   dom.legendMedian.textContent = formatCurrency(state.manifest.globalStats.median, true).replace('/m²', '');
   dom.legendMax.textContent = formatCurrency(state.manifest.globalStats.max, true).replace('/m²', '');
@@ -497,6 +618,28 @@ function updateToggleClassesLabel() {
   dom.toggleClasses.textContent = allSelected ? 'Clear' : 'Select all';
 }
 
+function updateToggleRoadClassesLabel() {
+  const allSelected = state.selectedRoadClasses.size === state.transportManifest.classes.length;
+  dom.toggleRoadClasses.textContent = allSelected ? 'Clear' : 'Select all';
+}
+
+function updateModeControls() {
+  const cellsVisible = ['all', 'cover', 'value'].includes(state.mode);
+  const roadsVisible = ['all', 'transport'].includes(state.mode);
+  const valueExtrusionActive = ['all', 'value'].includes(state.mode);
+  dom.blendSection.style.display = state.mode === 'all' ? '' : 'none';
+  dom.heightSection.classList.toggle('is-inactive', !valueExtrusionActive);
+  dom.heightScale.disabled = !valueExtrusionActive;
+  dom.landCoverFilterSection.classList.toggle('is-inactive', !cellsVisible);
+  dom.transportFilterSection.classList.toggle('is-inactive', !roadsVisible);
+  dom.downloadButton.disabled = state.mode === 'none';
+  dom.downloadButton.textContent = state.mode === 'transport'
+    ? '↓ Export visible roads'
+    : state.mode === 'none'
+      ? 'No analytical data visible'
+      : '↓ Export visible cells';
+}
+
 function wireEvents() {
   dom.citySelect.addEventListener('change', () => {
     state.selectedCity = dom.citySelect.value;
@@ -510,9 +653,9 @@ function wireEvents() {
     button.addEventListener('click', () => {
       state.mode = button.dataset.mode;
       dom.modeButtons.forEach(b => b.classList.toggle('active', b === button));
-      dom.blendSection.style.display = state.mode === 'integrated' ? '' : 'none';
-      dom.heightSection.style.opacity = state.mode === 'cover' ? '.55' : '1';
+      updateModeControls();
       updateScene();
+      updateStatistics();
     });
   });
 
@@ -536,6 +679,15 @@ function wireEvents() {
     updateScene();
     updateStatistics();
     updateToggleClassesLabel();
+  });
+
+  dom.toggleRoadClasses.addEventListener('click', () => {
+    const selectAll = state.selectedRoadClasses.size !== state.transportManifest.classes.length;
+    state.selectedRoadClasses.clear();
+    if (selectAll) state.transportManifest.classes.forEach(c => state.selectedRoadClasses.add(c.key));
+    dom.roadFilters.querySelectorAll('input').forEach(input => { input.checked = selectAll; });
+    updateScene();
+    updateToggleRoadClassesLabel();
   });
 
   dom.buildingsToggle.addEventListener('change', () => {
@@ -581,6 +733,27 @@ function wireEvents() {
 }
 
 function exportVisibleData() {
+  if (state.mode === 'transport') {
+    const features = filteredRoads().map(road => ({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: road[1] },
+      properties: {
+        city: cityNameFromRoad(road),
+        highway: roadClassMeta(road).key,
+        source: 'OpenStreetMap contributors'
+      }
+    }));
+    const blob = new Blob([
+      JSON.stringify({ type: 'FeatureCollection', features })
+    ], { type: 'application/geo+json;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `urban-twin-${state.selectedCity}-transport.geojson`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    return;
+  }
+  if (state.mode === 'none') return;
   const data = filteredCells();
   const rows = ['city,longitude,latitude,predicted_value_q50_brl_m2,land_cover_class,classification_confidence,match_distance_m,normalized_pointwise_interval_width,predicted_value_q10_brl_m2,predicted_value_q90_brl_m2'];
   data.forEach(cell => {
@@ -767,6 +940,7 @@ async function main() {
   try {
     await loadManifest();
     populateControls();
+    updateModeControls();
     wireEvents();
     await initMap();
     await loadSelection();

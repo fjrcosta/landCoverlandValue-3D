@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "source": "OpenStreetMap contributors",
+  "sourceUrl": "https://www.openstreetmap.org/",
+  "license": "Open Data Commons Open Database License (ODbL)",
+  "licenseUrl": "https://opendatacommons.org/licenses/odbl/",
+  "snapshot": "2025-12-28",
+  "classes": [
+    {
+      "key": "motorway",
+      "label": "Motorway",
+      "color": "#4B0082",
+      "width": 3.5
+    },
+    {
+      "key": "trunk",
+      "label": "Trunk",
+      "color": "#6A0DAD",
+      "width": 3.0
+    },
+    {
+      "key": "primary",
+      "label": "Primary",
+      "color": "#8B008B",
+      "width": 2.5
+    },
+    {
+      "key": "secondary",
+      "label": "Secondary",
+      "color": "#9932CC",
+      "width": 2.0
+    },
+    {
+      "key": "residential",
+      "label": "Residential",
+      "color": "#DDA0DD",
+      "width": 0.8
+    }
+  ],
+  "globalStats": {
+    "cities": 12,
+    "segments": 62471,
+    "sourceDirectedSegments": 110937,
+    "classCounts": {
+      "motorway": 297,
+      "trunk": 966,
+      "primary": 1480,
+      "secondary": 5494,
+      "residential": 54234
+    }
+  },
+  "cities": [
+    {
+      "slug": "londrina",
+      "name": "Londrina",
+      "file": "data/transport/cities/londrina.json",
+      "segments": 17223,
+      "classCounts": {
+        "motorway": 50,
+        "trunk": 309,
+        "primary": 748,
+        "secondary": 1320,
+        "residential": 14796
+      }
+    },
+    {
+      "slug": "cambe",
+      "name": "Cambé",
+      "file": "data/transport/cities/cambe.json",
+      "segments": 4333,
+      "classCounts": {
+        "motorway": 19,
+        "trunk": 73,
+        "primary": 78,
+        "secondary": 220,
+        "residential": 3943
+      }
+    },
+    {
+      "slug": "ibipora",
+      "name": "Ibiporã",
+      "file": "data/transport/cities/ibipora.json",
+      "segments": 2743,
+      "classCounts": {
+        "motorway": 0,
+        "trunk": 31,
+        "primary": 175,
+        "secondary": 127,
+        "residential": 2410
+      }
+    },
+    {
+      "slug": "rolandia",
+      "name": "Rolândia",
+      "file": "data/transport/cities/rolandia.json",
+      "segments": 3901,
+      "classCounts": {
+        "motorway": 0,
+        "trunk": 82,
+        "primary": 67,
+        "secondary": 235,
+        "residential": 3517
+      }
+    },
+    {
+      "slug": "arapongas",
+      "name": "Arapongas",
+      "file": "data/transport/cities/arapongas.json",
+      "segments": 5590,
+      "classCounts": {
+        "motorway": 0,
+        "trunk": 156,
+        "primary": 36,
+        "secondary": 175,
+        "residential": 5223
+      }
+    },
+    {
+      "slug": "apucarana",
+      "name": "Apucarana",
+      "file": "data/transport/cities/apucarana.json",
+      "segments": 5600,
+      "classCounts": {
+        "motorway": 59,
+        "trunk": 76,
+        "primary": 42,
+        "secondary": 132,
+        "residential": 5291
+      }
+    },
+    {
+      "slug": "cambira",
+      "name": "Cambira",
+      "file": "data/transport/cities/cambira.json",
+      "segments": 407,
+      "classCounts": {
+        "motorway": 0,
+        "trunk": 0,
+        "primary": 0,
+        "secondary": 19,
+        "residential": 388
+      }
+    },
+    {
+      "slug": "jandaia",
+      "name": "Jandaia do Sul",
+      "file": "data/transport/cities/jandaia.json",
+      "segments": 1135,
+      "classCounts": {
+        "motorway": 18,
+        "trunk": 0,
+        "primary": 23,
+        "secondary": 28,
+        "residential": 1066
+      }
+    },
+    {
+      "slug": "mandaguari",
+      "name": "Mandaguari",
+      "file": "data/transport/cities/mandaguari.json",
+      "segments": 1595,
+      "classCounts": {
+        "motorway": 45,
+        "trunk": 36,
+        "primary": 67,
+        "secondary": 50,
+        "residential": 1397
+      }
+    },
+    {
+      "slug": "marialva",
+      "name": "Marialva",
+      "file": "data/transport/cities/marialva.json",
+      "segments": 1983,
+      "classCounts": {
+        "motorway": 55,
+        "trunk": 0,
+        "primary": 0,
+        "secondary": 144,
+        "residential": 1784
+      }
+    },
+    {
+      "slug": "sarandi",
+      "name": "Sarandi",
+      "file": "data/transport/cities/sarandi.json",
+      "segments": 3995,
+      "classCounts": {
+        "motorway": 19,
+        "trunk": 0,
+        "primary": 0,
+        "secondary": 0,
+        "residential": 3976
+      }
+    },
+    {
+      "slug": "maringa",
+      "name": "Maringá",
+      "file": "data/transport/cities/maringa.json",
+      "segments": 13966,
+      "classCounts": {
+        "motorway": 32,
+        "trunk": 203,
+        "primary": 244,
+        "secondary": 3044,
+        "residential": 10443
+      }
+    }
+  ]
+}

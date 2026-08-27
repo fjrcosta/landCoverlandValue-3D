@@ -21,7 +21,8 @@ def main() -> None:
     app = MAP3D / "assets" / "app.js"
     css = MAP3D / "assets" / "styles.css"
     manifest_path = MAP3D / "data" / "manifest.json"
-    for path in (landing, index, app, css, manifest_path):
+    transport_manifest_path = MAP3D / "data" / "transport" / "manifest.json"
+    for path in (landing, index, app, css, manifest_path, transport_manifest_path):
         if not path.exists():
             fail(f"Missing {path.relative_to(ROOT)}")
 
@@ -29,7 +30,10 @@ def main() -> None:
     for ref in ("./assets/app.js", "./assets/styles.css"):
         if ref not in html:
             fail(f"index.html does not reference {ref}")
-    required_ids = ["map", "citySelect", "classFilters", "loadingOverlay", "aboutDialog"]
+    required_ids = [
+        "map", "citySelect", "classFilters", "roadFilters", "toggleRoadClasses",
+        "loadingOverlay", "aboutDialog"
+    ]
     for element_id in required_ids:
         if not re.search(rf'id=["\']{re.escape(element_id)}["\']', html):
             fail(f"index.html is missing #{element_id}")
@@ -92,9 +96,54 @@ def main() -> None:
     if manifest.get("globalStats", {}).get("cells") != total:
         fail("Global cell count does not match city files")
 
+    transport = json.loads(transport_manifest_path.read_text(encoding="utf-8"))
+    if transport.get("schemaVersion") != 1:
+        fail("Transport manifest does not use schema version 1")
+    road_classes = transport.get("classes", [])
+    if [item.get("key") for item in road_classes] != [
+        "motorway", "trunk", "primary", "secondary", "residential"
+    ]:
+        fail("Transport manifest has unexpected OSM highway classes")
+    transport_cities = transport.get("cities", [])
+    if {item.get("slug") for item in transport_cities} != {item.get("slug") for item in cities}:
+        fail("Transport and analytical manifests cover different cities")
+
+    total_roads = 0
+    for meta in transport_cities:
+        road_path = MAP3D / meta["file"]
+        if not road_path.exists():
+            fail(f"Missing transport data file {meta['file']}")
+        city = json.loads(road_path.read_text(encoding="utf-8"))
+        if city.get("schemaVersion") != 1 or city.get("slug") != meta.get("slug"):
+            fail(f"Invalid transport metadata in {meta['file']}")
+        roads = city.get("roads", [])
+        if meta.get("segments") != len(roads):
+            fail(f"Transport segment count mismatch for {meta['slug']}")
+        seen = set()
+        for i, road in enumerate(roads):
+            if len(road) != 2:
+                fail(f"{meta['file']} road {i} has {len(road)} fields, expected 2")
+            class_index, path = road
+            if not (0 <= class_index < len(road_classes)) or len(path) < 2:
+                fail(f"Invalid road record in {meta['file']} at {i}")
+            for lon, lat in path:
+                if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+                    fail(f"Invalid road coordinate in {meta['file']} at {i}")
+            forward = tuple(tuple(point) for point in path)
+            canonical = min(forward, tuple(reversed(forward)))
+            key = (class_index, canonical)
+            if key in seen:
+                fail(f"Duplicate directed road geometry in {meta['file']} at {i}")
+            seen.add(key)
+        total_roads += len(roads)
+
+    if transport.get("globalStats", {}).get("segments") != total_roads:
+        fail("Global transport count does not match city files")
+
     print(
         f"Validated static site: {len(cities)} cities, {len(classes)} classes, "
-        f"{total:,} cells, datasetMode={manifest.get('datasetMode')}"
+        f"{total:,} cells, {total_roads:,} unique OSM road geometries, "
+        f"datasetMode={manifest.get('datasetMode')}"
     )
 
 
