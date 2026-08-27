@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20260827-1" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260827-2" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -51,23 +51,18 @@
         <section class="panel-section">
           <div class="section-heading"><span>Analytical dimensions</span></div>
           <div class="analytical-modes" role="group" aria-label="Analytical dimensions">
-            <div class="mode-pair">
-              <button class="segment active" data-mode="all" type="button">
-                <strong>All</strong><small>all dimensions</small>
-              </button>
-              <button class="segment" data-mode="none" type="button">
-                <strong>None</strong><small>basemap only</small>
-              </button>
-            </div>
-            <button class="segment mode-row" data-mode="cover" type="button">
-              <strong>Land cover</strong><small>DINOv2–LoRA</small>
-            </button>
-            <button class="segment mode-row" data-mode="value" type="button">
-              <strong>Land value</strong><small>TabPFN v2</small>
-            </button>
-            <button class="segment mode-row" data-mode="transport" type="button">
-              <strong>Transport network</strong><small>OpenStreetMap</small>
-            </button>
+            <label class="dimension-option">
+              <input id="coverDimension" type="checkbox" checked />
+              <span><strong>Land cover</strong><small>DINOv2–LoRA</small></span>
+            </label>
+            <label class="dimension-option">
+              <input id="valueDimension" type="checkbox" checked />
+              <span><strong>Land value</strong><small>TabPFN v2</small></span>
+            </label>
+            <label class="dimension-option">
+              <input id="transportDimension" type="checkbox" checked />
+              <span><strong>Transport network</strong><small>OpenStreetMap</small></span>
+            </label>
           </div>
         </section>
 
@@ -80,13 +75,23 @@
           <div class="range-hint"><span>flat</span><span>analytical</span><span>dramatic</span></div>
         </section>
 
-        <section class="panel-section" id="blendSection">
+        <section class="panel-section" id="tintSection">
           <div class="range-header">
-            <label for="colorBlend">Value tint in class colors</label>
-            <output id="colorBlendOutput">22%</output>
+            <label for="valueTint">Land value tint</label>
+            <output id="valueTintOutput">22%</output>
           </div>
-          <input id="colorBlend" class="range-control" type="range" min="0" max="1" step="0.01" value="0.22" />
-          <p class="microcopy"><strong>Color only:</strong> this control blends the continuous land-value palette into the categorical land-cover color. It does not alter prism height; height is controlled separately by value vertical extrusion.</p>
+          <input id="valueTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.22" />
+          <div class="range-header tint-range-header">
+            <label for="coverTint">Land cover tint</label>
+            <output id="coverTintOutput">78%</output>
+          </div>
+          <input id="coverTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.78" />
+          <div class="range-header tint-range-header">
+            <label for="transportTint">Transport tint</label>
+            <output id="transportTintOutput">96%</output>
+          </div>
+          <input id="transportTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.96" />
+          <p class="microcopy">Tint controls each selected dimension's visual contribution. Value vertical extrusion is controlled separately.</p>
         </section>
 
         <section class="panel-section" id="landCoverFilterSection">
@@ -181,7 +186,7 @@
       </header>
       <span class="eyebrow">Methodological note</span>
       <h2>One scene, three analytical dimensions</h2>
-      <p>The default All view assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification and adds the OpenStreetMap urban road hierarchy. Prism height encodes predicted median unit land value, prism color encodes land-cover class, and line color and width distinguish transport-network classes.</p>
+      <p>The default view assigns each 109.45 m TabPFN grid cell the nearest DINOv2–LoRA land-cover classification and adds the OpenStreetMap urban road hierarchy. The three analytical dimensions can be combined freely: prism height encodes predicted median unit land value, prism color combines the selected land-value and land-cover tints, and line color and width distinguish transport-network classes.</p>
       <div class="method-grid">
         <div><strong>Urban land cover</strong><span>DINOv2 ViT-L/14 with LoRA; 10 mutually exclusive classes and classification confidence.</span></div>
         <div><strong>Urban land value</strong><span>TabPFN v2, configuration 60; the median unit-value estimate is used directly in R$/m² for a 450 m² reference parcel.</span></div>
@@ -229,6 +234,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20260827-1"></script>
+  <script type="module" src="./assets/app.js?v=20260827-2"></script>
 </body>
 </html>

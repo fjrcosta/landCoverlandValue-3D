@@ -31,12 +31,15 @@ def main() -> None:
         if ref not in html:
             fail(f"index.html does not reference {ref}")
     required_ids = [
-        "map", "citySelect", "classFilters", "roadFilters", "toggleRoadClasses",
-        "loadingOverlay", "aboutDialog"
+        "map", "citySelect", "coverDimension", "valueDimension", "transportDimension",
+        "heightScale", "valueTint", "coverTint", "transportTint", "classFilters",
+        "roadFilters", "toggleRoadClasses", "loadingOverlay", "aboutDialog"
     ]
     for element_id in required_ids:
         if not re.search(rf'id=["\']{re.escape(element_id)}["\']', html):
             fail(f"index.html is missing #{element_id}")
+    if "data-mode=" in html:
+        fail("index.html still contains exclusive analytical-mode buttons")
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     if manifest.get("schemaVersion") != 3:

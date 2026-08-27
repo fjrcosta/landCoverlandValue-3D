@@ -6,11 +6,11 @@ A GitHub Pages–ready 3D web application that combines three analytical dimensi
 - **Median unit urban land value:** TabPFN v2 configuration-60 predictions for a 450 m² reference parcel on a 109.45 m grid, displayed in R$/m².
 - **Urban transportation network:** OpenStreetMap drive-network geometry classified as motorway, trunk, primary, secondary and residential.
 
-The default **All** view combines the three dimensions:
+The three dimensions are independently selectable and can be freely combined:
 
 - prism **height** = predicted median unit land value;
 - prism **categorical color** = urban land-cover class;
-- optional continuous **value tint** = the notebook’s blue-to-red `tim.colors()`-like palette;
+- continuous **value tint** = the notebook’s blue-to-red `tim.colors()`-like palette;
 - tooltip = city, class, confidence, predictive quantiles and normalized pointwise interval width.
 - road color and width = OpenStreetMap `highway` class.
 
@@ -21,8 +21,8 @@ The repository contains a deterministic synthetic demonstration dataset so the i
 - GPU-accelerated rendering of the twelve-city grid with deck.gl.
 - MapLibre geographic camera with pitch, rotation, zoom and optional OpenStreetMap-derived 3D buildings.
 - Regional view and individual city views for Londrina, Cambé, Ibiporã, Rolândia, Arapongas, Apucarana, Cambira, Jandaia do Sul, Mandaguari, Marialva, Sarandi and Maringá.
-- All, None, land-cover-only, land-value-only and transport-network-only analytical dimensions.
-- Land-cover and road-class filtering, value vertical-extrusion control and continuous/categorical color blending.
+- Independent land-cover, land-value and transport-network analytical dimensions, allowing every overlay combination or a basemap-only scene.
+- Land-cover and road-class filtering, value vertical-extrusion control and separate value, cover and transport tint controls.
 - Dynamic statistics and land-cover composition for the visible selection.
 - Hover inspection, automatic twelve-city tour and CSV export of the filtered records.
 - Static hosting with no backend, database or API key.

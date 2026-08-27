@@ -43,9 +43,11 @@ const state = {
   currentCells: [],
   currentRoads: [],
   selectedCity: 'all',
-  mode: 'all',
+  activeDimensions: new Set(['cover', 'value', 'transport']),
   heightScale: 1,
-  colorBlend: 0.22,
+  valueTint: 0.22,
+  coverTint: 0.78,
+  transportTint: 0.96,
   selectedClasses: new Set(),
   selectedRoadClasses: new Set(),
   showLabels: true,
@@ -63,17 +65,18 @@ const dom = {};
 function bindDom() {
   const ids = [
     'datasetBadge', 'basemapSelect', 'tourButton', 'resetButton', 'citySelect',
-    'heightScale', 'heightScaleOutput', 'colorBlend', 'colorBlendOutput',
+    'coverDimension', 'valueDimension', 'transportDimension',
+    'heightScale', 'heightScaleOutput', 'valueTint', 'valueTintOutput',
+    'coverTint', 'coverTintOutput', 'transportTint', 'transportTintOutput',
     'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
     'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
     'p10Metric', 'medianMetric', 'p90Metric', 'classMetric', 'confidenceMetric',
     'distributionTotal', 'distributionBar', 'classBreakdown', 'extentMetric', 'legendMin',
     'legendMedian', 'legendMax', 'hoverCard', 'loadingOverlay', 'errorBanner',
-    'aboutDialog', 'dataWarning', 'blendSection', 'heightSection'
+    'aboutDialog', 'dataWarning', 'tintSection', 'heightSection'
   ];
   ids.forEach(id => { dom[id] = document.getElementById(id); });
-  dom.modeButtons = [...document.querySelectorAll('[data-mode]')];
 }
 
 function hexToRgb(hex, alpha = 255) {
@@ -183,7 +186,7 @@ function normalizePrice(price) {
 }
 
 function elevationForCell(cell) {
-  if (state.mode === 'cover' || state.heightScale === 0) return 2;
+  if (!state.activeDimensions.has('value') || state.heightScale === 0) return 2;
   const n = normalizePrice(cell[2]);
   return (8 + 540 * Math.pow(n, 1.15)) * state.heightScale;
 }
@@ -192,9 +195,14 @@ function colorForCell(cell) {
   const key = classKey(cell);
   const classRgb = hexToRgb(CLASS_COLORS[key] || '#808080');
   const valueRgb = interpolateValueColor(normalizePrice(cell[2]));
-  if (state.mode === 'value') return valueRgb;
-  if (state.mode === 'cover') return [...classRgb.slice(0, 3), 218];
-  return mixColor(classRgb, valueRgb, state.colorBlend, 232);
+  const coverWeight = state.activeDimensions.has('cover') ? state.coverTint : 0;
+  const valueWeight = state.activeDimensions.has('value') ? state.valueTint : 0;
+  const totalWeight = coverWeight + valueWeight;
+  if (totalWeight === 0) return [0, 0, 0, 0];
+  const alpha = Math.round(232 * Math.min(1, totalWeight));
+  if (coverWeight === 0) return [...valueRgb.slice(0, 3), alpha];
+  if (valueWeight === 0) return [...classRgb.slice(0, 3), alpha];
+  return mixColor(classRgb, valueRgb, valueWeight / totalWeight, alpha);
 }
 
 function showError(message) {
@@ -290,6 +298,7 @@ async function loadSelection() {
 }
 
 function filteredCells() {
+  if (!state.activeDimensions.has('cover')) return state.currentCells;
   return state.currentCells.filter(cell => state.selectedClasses.has(classKey(cell)));
 }
 
@@ -302,8 +311,13 @@ function updateScene() {
   const data = filteredCells();
   const roadData = filteredRoads();
   const gridSize = state.manifest.gridSizeM || 109.45;
-  const showGrid = ['all', 'cover', 'value'].includes(state.mode);
-  const showRoads = ['all', 'transport'].includes(state.mode);
+  const showGrid = (
+    state.activeDimensions.has('cover') && state.coverTint > 0
+  ) || (
+    state.activeDimensions.has('value') && state.valueTint > 0
+  );
+  const showRoads = state.activeDimensions.has('transport') && state.transportTint > 0;
+  const dimensionsKey = [...state.activeDimensions].sort().join('-') || 'none';
 
   const ambientLight = new deck.AmbientLight({ color: [255, 255, 255], intensity: 1.5 });
   const directionalLight = new deck.DirectionalLight({
@@ -314,7 +328,7 @@ function updateScene() {
   const lightingEffect = new deck.LightingEffect({ ambientLight, directionalLight });
 
   const gridLayer = showGrid ? new deck.GridCellLayer({
-    id: `urban-grid-${state.mode}-${state.heightScale}-${state.colorBlend}-${state.selectedClasses.size}`,
+    id: `urban-grid-${dimensionsKey}-${state.heightScale}-${state.valueTint}-${state.coverTint}-${state.selectedClasses.size}`,
     data,
     pickable: true,
     extruded: true,
@@ -336,8 +350,8 @@ function updateScene() {
       getFillColor: { duration: 320 }
     },
     updateTriggers: {
-      getElevation: [state.mode, state.heightScale, state.manifest.globalStats.min, state.manifest.globalStats.max],
-      getFillColor: [state.mode, state.colorBlend, ...state.selectedClasses]
+      getElevation: [state.activeDimensions.has('value'), state.heightScale, state.manifest.globalStats.min, state.manifest.globalStats.max],
+      getFillColor: [state.activeDimensions.has('cover'), state.activeDimensions.has('value'), state.coverTint, state.valueTint, ...state.selectedClasses]
     },
     onHover: handleHover,
     onClick: info => {
@@ -346,7 +360,7 @@ function updateScene() {
   }) : null;
 
   const roadLayer = showRoads ? new deck.PathLayer({
-    id: `transport-network-${state.mode}-${state.selectedRoadClasses.size}`,
+    id: `transport-network-${dimensionsKey}-${state.transportTint}-${state.selectedRoadClasses.size}`,
     data: roadData,
     pickable: true,
     getPath: road => road[1].map(point => [point[0], point[1], 5]),
@@ -357,10 +371,10 @@ function updateScene() {
     widthMaxPixels: 5,
     jointRounded: true,
     capRounded: true,
-    opacity: 0.96,
+    opacity: state.transportTint,
     parameters: { depthTest: false },
     updateTriggers: {
-      getColor: [...state.selectedRoadClasses],
+      getColor: [state.transportTint, ...state.selectedRoadClasses],
       getWidth: [...state.selectedRoadClasses]
     },
     onHover: handleRoadHover,
@@ -486,7 +500,7 @@ function renderHoverCard(info, pinned = false) {
 }
 
 function updateStatistics() {
-  const showCellStatistics = ['all', 'cover', 'value'].includes(state.mode);
+  const showCellStatistics = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
   dom.insightPanel.style.display = showCellStatistics ? '' : 'none';
   if (!showCellStatistics) return;
   const data = filteredCells();
@@ -623,21 +637,24 @@ function updateToggleRoadClassesLabel() {
   dom.toggleRoadClasses.textContent = allSelected ? 'Clear' : 'Select all';
 }
 
-function updateModeControls() {
-  const cellsVisible = ['all', 'cover', 'value'].includes(state.mode);
-  const roadsVisible = ['all', 'transport'].includes(state.mode);
-  const valueExtrusionActive = ['all', 'value'].includes(state.mode);
-  dom.blendSection.style.display = state.mode === 'all' ? '' : 'none';
-  dom.heightSection.classList.toggle('is-inactive', !valueExtrusionActive);
-  dom.heightScale.disabled = !valueExtrusionActive;
-  dom.landCoverFilterSection.classList.toggle('is-inactive', !cellsVisible);
+function updateDimensionControls() {
+  const coverVisible = state.activeDimensions.has('cover');
+  const valueVisible = state.activeDimensions.has('value');
+  const roadsVisible = state.activeDimensions.has('transport');
+  const cellsVisible = coverVisible || valueVisible;
+  dom.heightSection.classList.toggle('is-inactive', !valueVisible);
+  dom.heightScale.disabled = !valueVisible;
+  dom.valueTint.disabled = !valueVisible;
+  dom.coverTint.disabled = !coverVisible;
+  dom.transportTint.disabled = !roadsVisible;
+  dom.landCoverFilterSection.classList.toggle('is-inactive', !coverVisible);
   dom.transportFilterSection.classList.toggle('is-inactive', !roadsVisible);
-  dom.downloadButton.disabled = state.mode === 'none';
-  dom.downloadButton.textContent = state.mode === 'transport'
-    ? '↓ Export visible roads'
-    : state.mode === 'none'
-      ? 'No analytical data visible'
-      : '↓ Export visible cells';
+  dom.downloadButton.disabled = !cellsVisible && !roadsVisible;
+  dom.downloadButton.textContent = cellsVisible
+    ? '↓ Export visible cells'
+    : roadsVisible
+      ? '↓ Export visible roads'
+      : 'No analytical data visible';
 }
 
 function wireEvents() {
@@ -649,11 +666,15 @@ function wireEvents() {
     else flyToCity(state.selectedCity);
   });
 
-  dom.modeButtons.forEach(button => {
-    button.addEventListener('click', () => {
-      state.mode = button.dataset.mode;
-      dom.modeButtons.forEach(b => b.classList.toggle('active', b === button));
-      updateModeControls();
+  [
+    ['cover', dom.coverDimension],
+    ['value', dom.valueDimension],
+    ['transport', dom.transportDimension]
+  ].forEach(([dimension, input]) => {
+    input.addEventListener('change', () => {
+      if (input.checked) state.activeDimensions.add(dimension);
+      else state.activeDimensions.delete(dimension);
+      updateDimensionControls();
       updateScene();
       updateStatistics();
     });
@@ -665,10 +686,16 @@ function wireEvents() {
     updateScene();
   });
 
-  dom.colorBlend.addEventListener('input', () => {
-    state.colorBlend = Number(dom.colorBlend.value);
-    dom.colorBlendOutput.value = `${Math.round(state.colorBlend * 100)}%`;
-    updateScene();
+  [
+    ['valueTint', 'valueTintOutput'],
+    ['coverTint', 'coverTintOutput'],
+    ['transportTint', 'transportTintOutput']
+  ].forEach(([controlId, outputId]) => {
+    dom[controlId].addEventListener('input', () => {
+      state[controlId] = Number(dom[controlId].value);
+      dom[outputId].value = `${Math.round(state[controlId] * 100)}%`;
+      updateScene();
+    });
   });
 
   dom.toggleClasses.addEventListener('click', () => {
@@ -733,7 +760,9 @@ function wireEvents() {
 }
 
 function exportVisibleData() {
-  if (state.mode === 'transport') {
+  const cellsVisible = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
+  const roadsVisible = state.activeDimensions.has('transport');
+  if (roadsVisible && !cellsVisible) {
     const features = filteredRoads().map(road => ({
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: road[1] },
@@ -753,7 +782,7 @@ function exportVisibleData() {
     URL.revokeObjectURL(link.href);
     return;
   }
-  if (state.mode === 'none') return;
+  if (!cellsVisible) return;
   const data = filteredCells();
   const rows = ['city,longitude,latitude,predicted_value_q50_brl_m2,land_cover_class,classification_confidence,match_distance_m,normalized_pointwise_interval_width,predicted_value_q10_brl_m2,predicted_value_q90_brl_m2'];
   data.forEach(cell => {
@@ -764,7 +793,8 @@ function exportVisibleData() {
   const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
-  link.download = `urban-twin-${state.selectedCity}-${state.mode}.csv`;
+  const dimensions = [...state.activeDimensions].sort().join('-');
+  link.download = `urban-twin-${state.selectedCity}-${dimensions}.csv`;
   link.click();
   URL.revokeObjectURL(link.href);
 }
@@ -940,7 +970,7 @@ async function main() {
   try {
     await loadManifest();
     populateControls();
-    updateModeControls();
+    updateDimensionControls();
     wireEvents();
     await initMap();
     await loadSelection();
