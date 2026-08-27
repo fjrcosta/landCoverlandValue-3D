@@ -318,6 +318,9 @@ function updateScene() {
   );
   const showRoads = state.activeDimensions.has('transport') && state.transportTint > 0;
   const dimensionsKey = [...state.activeDimensions].sort().join('-') || 'none';
+  const roadElevation = showGrid && state.activeDimensions.has('value') && state.heightScale > 0
+    ? (8 + 540) * state.heightScale + 18
+    : 5;
 
   const ambientLight = new deck.AmbientLight({ color: [255, 255, 255], intensity: 1.5 });
   const directionalLight = new deck.DirectionalLight({
@@ -360,10 +363,10 @@ function updateScene() {
   }) : null;
 
   const roadLayer = showRoads ? new deck.PathLayer({
-    id: `transport-network-${dimensionsKey}-${state.transportTint}-${state.selectedRoadClasses.size}`,
+    id: `transport-network-${dimensionsKey}-${state.transportTint}-${roadElevation}-${state.selectedRoadClasses.size}`,
     data: roadData,
     pickable: true,
-    getPath: road => road[1].map(point => [point[0], point[1], 5]),
+    getPath: road => road[1].map(point => [point[0], point[1], roadElevation]),
     getColor: road => hexToRgb(roadClassMeta(road).color, 242),
     getWidth: road => roadClassMeta(road).width,
     widthUnits: 'pixels',
@@ -374,6 +377,7 @@ function updateScene() {
     opacity: state.transportTint,
     parameters: { depthTest: false },
     updateTriggers: {
+      getPath: [roadElevation],
       getColor: [state.transportTint, ...state.selectedRoadClasses],
       getWidth: [...state.selectedRoadClasses]
     },
