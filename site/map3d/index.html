@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20260827-2" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260910-1" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -35,11 +35,14 @@
           </select>
         </label>
         <button id="tourButton" class="button button-secondary" type="button" title="Tour all 12 cities">▶ City tour</button>
+        <button id="panelsToggle" class="button button-secondary panels-button" type="button"
+                aria-controls="controlPanel insightPanel" aria-expanded="true"
+                title="Hide side panels">Hide panels</button>
         <button id="resetButton" class="icon-button" type="button" title="Reset regional view" aria-label="Reset regional view">⌂</button>
       </div>
     </header>
 
-    <aside class="control-panel glass" aria-label="Map controls">
+    <aside id="controlPanel" class="control-panel glass" aria-label="Map controls">
       <div class="panel-scroll">
         <section class="panel-section">
           <label class="field-label" for="citySelect">City</label>
@@ -234,6 +237,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20260827-3"></script>
+  <script type="module" src="./assets/app.js?v=20260910-1"></script>
 </body>
 </html>

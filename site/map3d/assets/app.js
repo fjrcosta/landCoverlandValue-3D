@@ -52,6 +52,7 @@ const state = {
   selectedRoadClasses: new Set(),
   showLabels: true,
   showBuildings: true,
+  panelsVisible: true,
   tourTimer: null,
   tourIndex: 0,
   overlay: null,
@@ -64,12 +65,12 @@ const dom = {};
 
 function bindDom() {
   const ids = [
-    'datasetBadge', 'basemapSelect', 'tourButton', 'resetButton', 'citySelect',
+    'datasetBadge', 'basemapSelect', 'tourButton', 'panelsToggle', 'resetButton', 'citySelect',
     'coverDimension', 'valueDimension', 'transportDimension',
     'heightScale', 'heightScaleOutput', 'valueTint', 'valueTintOutput',
     'coverTint', 'coverTintOutput', 'transportTint', 'transportTintOutput',
     'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
-    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
+    'controlPanel', 'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
     'p10Metric', 'medianMetric', 'p90Metric', 'classMetric', 'confidenceMetric',
     'distributionTotal', 'distributionBar', 'classBreakdown', 'extentMetric', 'legendMin',
@@ -661,6 +662,13 @@ function updateDimensionControls() {
       : 'No analytical data visible';
 }
 
+function updatePanelsVisibility() {
+  document.getElementById('app').classList.toggle('panels-hidden', !state.panelsVisible);
+  dom.panelsToggle.textContent = state.panelsVisible ? 'Hide panels' : 'Show panels';
+  dom.panelsToggle.title = state.panelsVisible ? 'Hide side panels' : 'Show side panels';
+  dom.panelsToggle.setAttribute('aria-expanded', String(state.panelsVisible));
+}
+
 function wireEvents() {
   dom.citySelect.addEventListener('change', () => {
     state.selectedCity = dom.citySelect.value;
@@ -729,6 +737,11 @@ function wireEvents() {
   dom.labelsToggle.addEventListener('change', () => {
     state.showLabels = dom.labelsToggle.checked;
     updateScene();
+  });
+
+  dom.panelsToggle.addEventListener('click', () => {
+    state.panelsVisible = !state.panelsVisible;
+    updatePanelsVisibility();
   });
 
   dom.resetButton.addEventListener('click', () => {
@@ -975,6 +988,7 @@ async function main() {
     await loadManifest();
     populateControls();
     updateDimensionControls();
+    updatePanelsVisibility();
     wireEvents();
     await initMap();
     await loadSelection();
