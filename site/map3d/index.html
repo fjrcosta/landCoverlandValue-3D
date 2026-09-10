@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20260910-1" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20260910-2" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -168,6 +168,10 @@
       </section>
     </aside>
 
+    <aside id="compactLegend" class="compact-legend glass" aria-label="Visible map legend" aria-hidden="true">
+      <div id="compactLegendContent"></div>
+    </aside>
+
     <div id="hoverCard" class="hover-card glass" hidden></div>
     <div id="loadingOverlay" class="loading-overlay">
       <div class="loader-graphic"><span></span><span></span><span></span></div>
@@ -237,6 +241,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20260910-1"></script>
+  <script type="module" src="./assets/app.js?v=20260910-2"></script>
 </body>
 </html>

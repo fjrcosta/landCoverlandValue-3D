@@ -53,6 +53,7 @@ const state = {
   showLabels: true,
   showBuildings: true,
   panelsVisible: true,
+  compactLegendSignature: '',
   tourTimer: null,
   tourIndex: 0,
   overlay: null,
@@ -70,7 +71,8 @@ function bindDom() {
     'heightScale', 'heightScaleOutput', 'valueTint', 'valueTintOutput',
     'coverTint', 'coverTintOutput', 'transportTint', 'transportTintOutput',
     'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
-    'controlPanel', 'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
+    'controlPanel', 'compactLegend', 'compactLegendContent',
+    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
     'p10Metric', 'medianMetric', 'p90Metric', 'classMetric', 'confidenceMetric',
     'distributionTotal', 'distributionBar', 'classBreakdown', 'extentMetric', 'legendMin',
@@ -308,6 +310,7 @@ function filteredRoads() {
 }
 
 function updateScene() {
+  updateCompactLegend();
   if (!state.overlay || !state.manifest) return;
   const data = filteredCells();
   const roadData = filteredRoads();
@@ -662,11 +665,86 @@ function updateDimensionControls() {
       : 'No analytical data visible';
 }
 
+function updateCompactLegend() {
+  if (!state.manifest || !state.transportManifest) return;
+
+  const signature = JSON.stringify({
+    dimensions: [...state.activeDimensions].sort(),
+    classes: [...state.selectedClasses].sort(),
+    roads: [...state.selectedRoadClasses].sort(),
+    valueHeight: state.heightScale > 0
+  });
+
+  if (signature !== state.compactLegendSignature) {
+    const sections = [];
+
+    if (state.activeDimensions.has('cover')) {
+      const classes = state.manifest.classes.filter(item => state.selectedClasses.has(item.key));
+      const items = classes.length
+        ? classes.map(item => `
+            <div class="compact-legend-item">
+              <i class="compact-swatch" style="background:${CLASS_COLORS[item.key]}"></i>
+              <span>${CLASS_SHORT_LABELS[item.key] || item.label}</span>
+            </div>`).join('')
+        : '<div class="compact-value-note">No land-cover classes selected.</div>';
+      sections.push(`
+        <section class="compact-legend-section">
+          <h3 class="compact-legend-heading">Urban land cover</h3>
+          <div class="compact-cover-items">${items}</div>
+        </section>`);
+    }
+
+    if (state.activeDimensions.has('value')) {
+      const stats = state.manifest.globalStats;
+      const heightNote = state.heightScale > 0
+        ? '<p class="compact-value-note">Colour and prism height represent predicted median unit land value.</p>'
+        : '<p class="compact-value-note">Colour represents predicted median unit land value.</p>';
+      sections.push(`
+        <section class="compact-legend-section">
+          <h3 class="compact-legend-heading">Median unit land value (R$/m²)</h3>
+          <div class="compact-value-gradient"></div>
+          <div class="compact-value-labels">
+            <span>${formatCurrency(stats.min, true).replace('/m²', '')}</span>
+            <span>${formatCurrency(stats.median, true).replace('/m²', '')}</span>
+            <span>${formatCurrency(stats.max, true).replace('/m²', '')}</span>
+          </div>
+          ${heightNote}
+        </section>`);
+    }
+
+    if (state.activeDimensions.has('transport')) {
+      const roads = state.transportManifest.classes.filter(item => state.selectedRoadClasses.has(item.key));
+      const items = roads.length
+        ? roads.map(item => `
+            <div class="compact-legend-item">
+              <i class="compact-road-line" style="background:${item.color};height:${Math.max(3, item.width)}px"></i>
+              <span>${item.label}</span>
+            </div>`).join('')
+        : '<div class="compact-value-note">No road classes selected.</div>';
+      sections.push(`
+        <section class="compact-legend-section">
+          <h3 class="compact-legend-heading">Transport network</h3>
+          <div class="compact-road-items">${items}</div>
+        </section>`);
+    }
+
+    dom.compactLegendContent.innerHTML = sections.length
+      ? `<h2 class="compact-legend-title">Visible map legend</h2>${sections.join('')}`
+      : '';
+    dom.compactLegend.classList.toggle('has-content', sections.length > 0);
+    state.compactLegendSignature = signature;
+  }
+
+  const legendVisible = !state.panelsVisible && dom.compactLegend.classList.contains('has-content');
+  dom.compactLegend.setAttribute('aria-hidden', String(!legendVisible));
+}
+
 function updatePanelsVisibility() {
   document.getElementById('app').classList.toggle('panels-hidden', !state.panelsVisible);
   dom.panelsToggle.textContent = state.panelsVisible ? 'Hide panels' : 'Show panels';
   dom.panelsToggle.title = state.panelsVisible ? 'Hide side panels' : 'Show side panels';
   dom.panelsToggle.setAttribute('aria-expanded', String(state.panelsVisible));
+  updateCompactLegend();
 }
 
 function wireEvents() {
