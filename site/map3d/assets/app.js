@@ -943,6 +943,15 @@ function stopTour() {
 function add3DBuildings() {
   const style = state.map.getStyle();
   const layers = style?.layers || [];
+  const existingBuildingLayer = layers.find(layer =>
+    layer.type === 'fill-extrusion' && layer['source-layer'] === 'building'
+  );
+  if (existingBuildingLayer) {
+    state.buildingLayerId = existingBuildingLayer.id;
+    setBuildingsVisibility();
+    return;
+  }
+
   const candidate = layers.find(layer => layer['source-layer'] === 'building');
   if (!candidate) {
     dom.buildingsToggle.disabled = true;
