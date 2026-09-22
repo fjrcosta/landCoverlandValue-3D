@@ -997,8 +997,11 @@ function add3DBuildings() {
 }
 
 function setBuildingsVisibility() {
-  if (!state.buildingLayerId || !state.map.getLayer(state.buildingLayerId)) return;
-  state.map.setLayoutProperty(state.buildingLayerId, 'visibility', state.showBuildings ? 'visible' : 'none');
+  const visibility = state.showBuildings ? 'visible' : 'none';
+  const layers = state.map.getStyle()?.layers || [];
+  layers.filter(layer => layer.type === 'fill-extrusion').forEach(layer => {
+    state.map.setLayoutProperty(layer.id, 'visibility', visibility);
+  });
 }
 
 function addSatelliteBasemap() {
@@ -1028,6 +1031,7 @@ function setBasemap(value) {
     'visibility',
     value === 'satellite' ? 'visible' : 'none'
   );
+  setBuildingsVisibility();
 }
 
 function initMap() {
