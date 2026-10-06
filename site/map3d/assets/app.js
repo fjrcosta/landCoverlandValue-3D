@@ -74,9 +74,8 @@ function bindDom() {
     'controlPanel', 'compactLegend', 'compactLegendContent',
     'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
-    'p10Metric', 'medianMetric', 'p90Metric', 'classMetric', 'confidenceMetric',
-    'distributionTotal', 'distributionBar', 'classBreakdown', 'extentMetric', 'legendMin',
-    'legendMedian', 'legendMax', 'hoverCard', 'loadingOverlay', 'errorBanner',
+    'classStatisticsBody', 'classStatisticsTotal', 'legendMin', 'legendMedian', 'legendMax',
+    'hoverCard', 'loadingOverlay', 'errorBanner',
     'aboutDialog', 'dataWarning', 'tintSection', 'heightSection'
   ];
   ids.forEach(id => { dom[id] = document.getElementById(id); });
@@ -123,6 +122,11 @@ function formatCurrency(value, compact = false) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('en-US').format(value || 0);
+}
+
+function formatLandValue(value) {
+  if (!Number.isFinite(value)) return '—';
+  return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
 }
 
 function formatArea(cellCount) {
@@ -511,71 +515,56 @@ function updateStatistics() {
   const showCellStatistics = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
   dom.insightPanel.style.display = showCellStatistics ? '' : 'none';
   if (!showCellStatistics) return;
-  const data = filteredCells();
-  const prices = data.map(d => d[2]).sort((a, b) => a - b);
-  const confidences = data.map(d => d[4]);
-  const counts = Object.fromEntries(state.manifest.classes.map(c => [c.key, 0]));
-  data.forEach(cell => { counts[classKey(cell)] += 1; });
-
-  const dominantEntry = data.length
-    ? Object.entries(counts).sort((a, b) => b[1] - a[1])[0]
-    : null;
-  const dominant = dominantEntry && dominantEntry[1] > 0 ? dominantEntry[0] : null;
-  const meanConfidence = confidences.length
-    ? confidences.reduce((a, b) => a + b, 0) / confidences.length
-    : NaN;
-
-  dom.p10Metric.textContent = formatCurrency(quantile(prices, 0.1), true);
-  dom.medianMetric.textContent = formatCurrency(quantile(prices, 0.5), true);
-  dom.p90Metric.textContent = formatCurrency(quantile(prices, 0.9), true);
-  dom.classMetric.textContent = dominant ? classLabel(dominant) : '—';
-  dom.confidenceMetric.textContent = Number.isFinite(meanConfidence) ? `${(meanConfidence * 100).toFixed(1)}%` : '—';
-  dom.distributionTotal.textContent = `${formatNumber(data.length)} cells`;
-  dom.extentMetric.textContent = formatArea(data.length);
-
-  dom.distributionBar.innerHTML = '';
-  const total = Math.max(1, data.length);
-  state.manifest.classes
-    .filter(item => state.selectedClasses.has(item.key) && counts[item.key] > 0)
-    .forEach(item => {
-      const value = counts[item.key];
-      const segment = document.createElement('span');
-      segment.className = 'distribution-segment';
-      segment.style.width = `${(value / total) * 100}%`;
-      segment.style.background = CLASS_COLORS[item.key];
-      segment.title = `${classLabel(item.key)}: ${formatNumber(value)} cells (${((value / total) * 100).toFixed(1)}%) · ${formatArea(value)}`;
-      dom.distributionBar.appendChild(segment);
-    });
-
-  dom.classBreakdown.innerHTML = '';
   const selectedItems = state.manifest.classes.filter(item => state.selectedClasses.has(item.key));
+  const municipalityTotal = state.currentCells.length;
+  dom.classStatisticsBody.innerHTML = '';
+  dom.classStatisticsTotal.innerHTML = '';
+
   if (!selectedItems.length) {
-    const empty = document.createElement('div');
-    empty.className = 'class-breakdown-empty';
-    empty.textContent = 'No land-cover class selected';
-    dom.classBreakdown.appendChild(empty);
+    const empty = document.createElement('tr');
+    empty.className = 'class-statistics-empty';
+    empty.innerHTML = '<td colspan="6">No land-cover class selected</td>';
+    dom.classStatisticsBody.appendChild(empty);
     return;
   }
 
+  const selectedCells = [];
   selectedItems.forEach(item => {
-    const count = counts[item.key] || 0;
-    const row = document.createElement('div');
-    row.className = 'class-breakdown-row';
+    const classCells = state.currentCells.filter(cell => classKey(cell) === item.key);
+    const prices = classCells.map(cell => cell[2]).sort((a, b) => a - b);
+    const count = classCells.length;
+    const share = municipalityTotal ? count / municipalityTotal * 100 : 0;
+    selectedCells.push(...classCells);
+    const row = document.createElement('tr');
     row.title = `${formatNumber(count)} cells · ${formatArea(count)}`;
     row.innerHTML = `
-      <span class="class-breakdown-label">
-        <i style="background:${CLASS_COLORS[item.key]}"></i>
-        <span>${classLabel(item.key)}</span>
-      </span>
-      <strong>${formatAreaCompact(count)}</strong>
+      <td><span class="class-statistics-label"><i style="background:${CLASS_COLORS[item.key]}"></i><span>${classLabel(item.key)}</span></span></td>
+      <td class="secondary">${formatAreaCompact(count)}</td>
+      <td class="secondary">${share.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+      <td>${formatLandValue(quantile(prices, 0.1))}</td>
+      <td>${formatLandValue(quantile(prices, 0.5))}</td>
+      <td>${formatLandValue(quantile(prices, 0.9))}</td>
     `;
-    dom.classBreakdown.appendChild(row);
+    dom.classStatisticsBody.appendChild(row);
   });
+
+  const totalPrices = selectedCells.map(cell => cell[2]).sort((a, b) => a - b);
+  const totalShare = municipalityTotal ? selectedCells.length / municipalityTotal * 100 : 0;
+  const totalRow = document.createElement('tr');
+  totalRow.innerHTML = `
+    <td>Total</td>
+    <td>${formatAreaCompact(selectedCells.length)}</td>
+    <td>${totalShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.1))}</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.5))}</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.9))}</td>
+  `;
+  dom.classStatisticsTotal.appendChild(totalRow);
 }
 
 function updateSelectionTitle() {
   const city = state.manifest.cities.find(c => c.slug === state.selectedCity);
-  dom.selectionTitle.textContent = city ? city.name : 'All 12 cities';
+  dom.selectionTitle.textContent = city ? city.name : 'All';
 }
 
 function populateControls() {

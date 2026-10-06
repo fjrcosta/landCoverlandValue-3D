@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20260910-2" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20261006-1" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -102,6 +102,13 @@
           <div id="classFilters" class="class-filters"></div>
         </section>
 
+        <section class="panel-section inline-value-legend" aria-label="Unit land-value color and height scale">
+          <div class="legend-title">Median unit land value <span>R$/m²</span></div>
+          <div class="value-gradient"></div>
+          <div class="gradient-labels"><span id="legendMin">—</span><span id="legendMedian">—</span><span id="legendMax">—</span></div>
+          <div class="height-key"><span class="height-cube low"></span><span>Prism height = predicted value intensity</span><span class="height-cube high"></span></div>
+        </section>
+
         <section class="panel-section" id="transportFilterSection">
           <div class="section-heading"><span>Urban transportation network</span><button id="toggleRoadClasses" class="text-button" type="button">Clear</button></div>
           <div id="roadFilters" class="class-filters road-filters"></div>
@@ -131,41 +138,39 @@
     <aside id="insightPanel" class="insight-panel glass" aria-live="polite">
       <div class="insight-title-row">
         <div>
-          <span class="eyebrow">Visible selection</span>
-          <h2 id="selectionTitle">Northern Paraná</h2>
+          <span class="eyebrow">Selected Municipality</span>
+          <h2 id="selectionTitle">All</h2>
         </div>
         <span id="selectionModel" class="status-dot" title="Dataset status"></span>
       </div>
 
-      <div class="value-metric-grid" aria-label="Visible land-value distribution">
-        <div class="metric"><span>10th percentile</span><strong id="p10Metric">—</strong></div>
-        <div class="metric"><span>Median land value</span><strong id="medianMetric">—</strong></div>
-        <div class="metric"><span>90th percentile</span><strong id="p90Metric">—</strong></div>
+      <div class="class-statistics-wrap">
+        <table class="class-statistics" aria-label="Extent, municipal share and land-value percentiles by selected land-cover class">
+          <colgroup>
+            <col class="class-column">
+            <col class="extent-column">
+            <col class="share-column">
+            <col class="value-column">
+            <col class="value-column">
+            <col class="value-column">
+          </colgroup>
+          <thead>
+            <tr class="statistics-main-heading">
+              <th rowspan="2">Selected Land-Cover Classes</th>
+              <th rowspan="2">Extent</th>
+              <th rowspan="2">Share</th>
+              <th colspan="3" class="percentiles-heading">Land values · Percentiles <span>R$/m²</span></th>
+            </tr>
+            <tr class="statistics-subheading">
+              <th>10th</th>
+              <th>50th</th>
+              <th>90th</th>
+            </tr>
+          </thead>
+          <tbody id="classStatisticsBody"></tbody>
+          <tfoot id="classStatisticsTotal"></tfoot>
+        </table>
       </div>
-      <div class="context-metric-grid">
-        <div class="metric"><span>Dominant class</span><strong id="classMetric">—</strong></div>
-        <div class="metric"><span>Mean confidence</span><strong id="confidenceMetric">—</strong></div>
-      </div>
-
-      <section class="distribution-wrap" aria-label="Visible land-cover composition and extent">
-        <div class="distribution-header"><span>Class composition</span><span id="distributionTotal">—</span></div>
-        <div id="distributionBar" class="distribution-bar" aria-label="Land-cover class distribution"></div>
-
-        <div class="breakdown-heading">
-          <span>Selected land-cover classes</span>
-          <span>Extent</span>
-        </div>
-        <div id="classBreakdown" class="class-breakdown" aria-label="Extent by selected land-cover class"></div>
-
-        <div class="distribution-footer total-extent-row"><span>Visible extent</span><strong id="extentMetric">—</strong></div>
-      </section>
-
-      <section class="inline-value-legend" aria-label="Unit land-value color and height scale">
-        <div class="legend-title">Median unit land value <span>R$/m²</span></div>
-        <div class="value-gradient"></div>
-        <div class="gradient-labels"><span id="legendMin">—</span><span id="legendMedian">—</span><span id="legendMax">—</span></div>
-        <div class="height-key"><span class="height-cube low"></span><span>Prism height = predicted value intensity</span><span class="height-cube high"></span></div>
-      </section>
     </aside>
 
     <aside id="compactLegend" class="compact-legend glass" aria-label="Visible map legend" aria-hidden="true">
@@ -241,6 +246,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20260922-2"></script>
+  <script type="module" src="./assets/app.js?v=20261006-1"></script>
 </body>
 </html>
