@@ -942,7 +942,7 @@ function wireEvents() {
     ['transport', dom.transportDimension]
   ].forEach(([dimension, input]) => {
     input.addEventListener('change', () => {
-      if (input.checked && state.economicsMetric) deactivateEconomics(true);
+      if (input.checked && state.economicsMetric) deactivateEconomics();
       if (input.checked) state.activeDimensions.add(dimension);
       else state.activeDimensions.delete(dimension);
       updateDimensionControls();
@@ -954,7 +954,7 @@ function wireEvents() {
   [['lud', dom.ludDimension], ['lvy', dom.lvyDimension]].forEach(([metric, input]) => {
     input.addEventListener('change', () => {
       if (input.checked) activateEconomics(metric);
-      else if (state.economicsMetric === metric) deactivateEconomics(true);
+      else if (state.economicsMetric === metric) deactivateEconomics();
       updateDimensionControls();
       updateScene();
       updateStatistics();
@@ -1052,16 +1052,10 @@ function activateEconomics(metric) {
   dom.hoverCard.hidden = true;
 }
 
-function deactivateEconomics(restoreSpatial) {
+function deactivateEconomics() {
   state.economicsMetric = null;
   dom.ludDimension.checked = false;
   dom.lvyDimension.checked = false;
-  if (restoreSpatial) {
-    state.activeDimensions = new Set(['cover', 'value', 'transport']);
-    dom.coverDimension.checked = true;
-    dom.valueDimension.checked = true;
-    dom.transportDimension.checked = true;
-  }
   dom.hoverCard.hidden = true;
 }
 
