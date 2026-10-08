@@ -51,6 +51,7 @@ const state = {
   cityCache: new Map(),
   transportCache: new Map(),
   currentCells: [],
+  regionalCells: [],
   currentRoads: [],
   selectedCity: 'all',
   activeDimensions: new Set(['cover', 'value', 'transport']),
@@ -310,6 +311,7 @@ async function loadSelection() {
     const [cities, transportCities] = await Promise.all([cityPromise, transportPromise]);
     if (state.loadToken !== token) return;
     state.currentCells = cities.flatMap(city => city.cells);
+    if (state.selectedCity === 'all') state.regionalCells = state.currentCells;
     state.currentRoads = transportCities.flatMap(city => city.roads);
     updateScene();
     updateStatistics();
@@ -654,7 +656,7 @@ function updateStatistics() {
   if (!selectedItems.length) {
     const empty = document.createElement('tr');
     empty.className = 'class-statistics-empty';
-    empty.innerHTML = '<td colspan="6">No land-cover category selected</td>';
+    empty.innerHTML = '<td colspan="7">No land-cover category selected</td>';
     dom.classStatisticsBody.appendChild(empty);
     return;
   }
@@ -665,6 +667,8 @@ function updateStatistics() {
     const prices = classCells.map(cell => cell[2]).sort((a, b) => a - b);
     const count = classCells.length;
     const share = municipalityTotal ? count / municipalityTotal * 100 : 0;
+    const regionalCount = state.regionalCells.filter(cell => classKey(cell) === item.key).length;
+    const regionalShare = regionalCount ? count / regionalCount * 100 : 0;
     selectedCells.push(...classCells);
     const row = document.createElement('tr');
     row.title = `${formatNumber(count)} cells · ${formatArea(count)}`;
@@ -672,6 +676,7 @@ function updateStatistics() {
       <td><span class="class-statistics-label"><i style="background:${CLASS_COLORS[item.key]}"></i><span>${classLabel(item.key)}</span></span></td>
       <td class="secondary">${formatAreaCompact(count)}</td>
       <td class="secondary">${share.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+      <td class="secondary">${regionalShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
       <td>${formatLandValue(quantile(prices, 0.1))}</td>
       <td>${formatLandValue(quantile(prices, 0.5))}</td>
       <td>${formatLandValue(quantile(prices, 0.9))}</td>
@@ -681,16 +686,32 @@ function updateStatistics() {
 
   const totalPrices = selectedCells.map(cell => cell[2]).sort((a, b) => a - b);
   const totalShare = municipalityTotal ? selectedCells.length / municipalityTotal * 100 : 0;
+  const regionalSelectedCells = state.regionalCells.filter(cell => state.selectedClasses.has(classKey(cell)));
+  const regionalPrices = regionalSelectedCells.map(cell => cell[2]).sort((a, b) => a - b);
+  const regionalCategoryShare = regionalSelectedCells.length ? selectedCells.length / regionalSelectedCells.length * 100 : 0;
   const totalRow = document.createElement('tr');
   totalRow.innerHTML = `
-    <td>Total</td>
+    <td>${state.selectedCity === 'all' ? 'Visible<br>total' : 'Selected<br>municipality'}</td>
     <td>${formatAreaCompact(selectedCells.length)}</td>
     <td>${totalShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+    <td>${regionalCategoryShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
     <td>${formatLandValue(quantile(totalPrices, 0.1))}</td>
     <td>${formatLandValue(quantile(totalPrices, 0.5))}</td>
     <td>${formatLandValue(quantile(totalPrices, 0.9))}</td>
   `;
-  dom.classStatisticsTotal.appendChild(totalRow);
+  if (state.selectedCity !== 'all') dom.classStatisticsTotal.appendChild(totalRow);
+  const regionalRow = document.createElement('tr');
+  regionalRow.className = 'regional-total-row';
+  regionalRow.innerHTML = `
+    <td>All<br>municipalities</td>
+    <td>${formatAreaCompact(regionalSelectedCells.length)}</td>
+    <td>${(regionalSelectedCells.length / Math.max(1, state.regionalCells.length) * 100).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+    <td>100,0%</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.1))}</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.5))}</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.9))}</td>
+  `;
+  dom.classStatisticsTotal.appendChild(regionalRow);
 }
 
 function updateEconomicsPanel() {

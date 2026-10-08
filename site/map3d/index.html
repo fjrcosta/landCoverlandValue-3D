@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20261008-2" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20261008-13" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -159,11 +159,12 @@
       </div>
 
       <div class="class-statistics-wrap">
-        <table class="class-statistics" aria-label="Extent, municipal share and land-value percentiles by selected land-cover category">
+        <table class="class-statistics" aria-label="Extent, municipal and regional shares, and land-value percentiles by selected land-cover category">
           <colgroup>
             <col class="class-column">
             <col class="extent-column">
             <col class="share-column">
+            <col class="regional-share-column">
             <col class="value-column">
             <col class="value-column">
             <col class="value-column">
@@ -172,7 +173,8 @@
             <tr class="statistics-main-heading">
               <th rowspan="2">Selected Land-Cover Categories</th>
               <th rowspan="2">Extent</th>
-              <th rowspan="2">Share</th>
+              <th rowspan="2" title="Share of the municipality occupied by the category"><span class="stacked-heading">Municipal<br>share</span></th>
+              <th rowspan="2" title="Municipality's share of the category's total regional extent"><span class="stacked-heading">Regional<br>share</span></th>
               <th colspan="3" class="percentiles-heading">Land values · Percentiles <span>R$/m²</span></th>
             </tr>
             <tr class="statistics-subheading">
@@ -276,6 +278,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20261008-7"></script>
+  <script type="module" src="./assets/app.js?v=20261008-12"></script>
 </body>
 </html>
