@@ -64,6 +64,7 @@ const state = {
   selectedClasses: new Set(),
   selectedRoadClasses: new Set(),
   showBuildings: true,
+  showUrbanPerimeters: false,
   panelsVisible: true,
   compactLegendSignature: '',
   tourTimer: null,
@@ -85,7 +86,7 @@ function bindDom() {
     'economicsTint', 'economicsTintOutput',
     'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
     'controlPanel', 'compactLegend', 'compactLegendContent',
-    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle',
+    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'perimeterToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
     'generalInsightContent', 'economicsInsightContent', 'economicsSelectionTitle',
     'economicsMetricLabel', 'economicsMetricValue', 'economicsMetricUnit', 'economicsDetails', 'economicsRanking',
@@ -393,10 +394,16 @@ function addMunicipalEconomicsMapLayer() {
 
 function updateMunicipalEconomicsMapLayer() {
   if (!state.map?.getLayer(ECONOMICS_FILL_LAYER_ID)) return;
-  const visibility = state.economicsMetric ? 'visible' : 'none';
-  state.map.setLayoutProperty(ECONOMICS_FILL_LAYER_ID, 'visibility', visibility);
-  state.map.setLayoutProperty(ECONOMICS_LINE_LAYER_ID, 'visibility', visibility);
-  if (!state.economicsMetric) return;
+  const economicsVisibility = state.economicsMetric ? 'visible' : 'none';
+  const outlineVisibility = state.economicsMetric || state.showUrbanPerimeters ? 'visible' : 'none';
+  state.map.setLayoutProperty(ECONOMICS_FILL_LAYER_ID, 'visibility', economicsVisibility);
+  state.map.setLayoutProperty(ECONOMICS_LINE_LAYER_ID, 'visibility', outlineVisibility);
+  if (!state.economicsMetric) {
+    state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-color', '#5eead4');
+    state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-width', 1.7);
+    state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-opacity', 0.9);
+    return;
+  }
   state.map.setPaintProperty(ECONOMICS_FILL_LAYER_ID, 'fill-opacity', state.economicsTint);
   const config = ECONOMICS_CONFIG[state.economicsMetric];
   const [min, max] = economicsExtent();
@@ -1023,6 +1030,11 @@ function wireEvents() {
   dom.buildingsToggle.addEventListener('change', () => {
     state.showBuildings = dom.buildingsToggle.checked;
     setBuildingsVisibility();
+  });
+
+  dom.perimeterToggle.addEventListener('change', () => {
+    state.showUrbanPerimeters = dom.perimeterToggle.checked;
+    updateScene();
   });
 
   dom.panelsToggle.addEventListener('click', () => {
