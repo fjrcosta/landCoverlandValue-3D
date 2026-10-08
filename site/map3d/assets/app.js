@@ -367,7 +367,7 @@ function addMunicipalEconomicsMapLayer() {
     type: 'line',
     source: ECONOMICS_SOURCE_ID,
     layout: { visibility: 'none' },
-    paint: { 'line-color': '#f8fafc', 'line-width': 1.4, 'line-opacity': 0.95 }
+    paint: { 'line-color': '#f8fafc', 'line-width': 2, 'line-opacity': 0.95 }
   }, firstSymbol);
 
   state.map.on('mousemove', ECONOMICS_FILL_LAYER_ID, event => {
@@ -405,7 +405,7 @@ function updateMunicipalEconomicsMapLayer() {
   state.map.setLayoutProperty(ECONOMICS_LINE_LAYER_ID, 'visibility', outlineVisibility);
   if (!state.economicsMetric) {
     state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-color', '#5eead4');
-    state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-width', 1.7);
+    state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-width', 2.4);
     state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-opacity', 0.9);
     return;
   }
@@ -425,7 +425,7 @@ function updateMunicipalEconomicsMapLayer() {
     'case', ['==', ['get', 'slug'], state.selectedCity], '#5eead4', '#f8fafc'
   ]);
   state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-width', [
-    'case', ['==', ['get', 'slug'], state.selectedCity], 4, 1.4
+    'case', ['==', ['get', 'slug'], state.selectedCity], 4.5, 2
   ]);
 }
 
