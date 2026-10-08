@@ -30,27 +30,38 @@ const VALUE_STOPS = [
   '#bfff00', '#ffff00', '#ffbf00', '#ff8000', '#ff4000', '#ff0000'
 ];
 
+const ECONOMICS_CONFIG = {
+  lud: { field: 'lud_2023_2024', label: 'LUD (2023/2024)', unit: 'US$ million/km²', decimals: 3 },
+  lvy: { field: 'lvy_2023_2024', label: 'LVY (2023/2024)', unit: 'year⁻¹', decimals: 4 }
+};
+const ECONOMICS_COLORS = ['#253494', '#2c7fb8', '#41b6c4', '#7fcdbb', '#fbbf24', '#f97316'];
+
 const REGION_BOUNDS = [[-52.04, -23.69], [-50.94, -23.18]];
 const INITIAL_VIEW = { center: [-51.50, -23.42], zoom: 9.25, pitch: 52, bearing: -17 };
 const SATELLITE_SOURCE_ID = 'esri-world-imagery';
 const SATELLITE_LAYER_ID = 'esri-world-imagery-layer';
+const ECONOMICS_SOURCE_ID = 'municipal-economics';
+const ECONOMICS_FILL_LAYER_ID = 'municipal-economics-fill';
+const ECONOMICS_LINE_LAYER_ID = 'municipal-economics-line';
 
 const state = {
   manifest: null,
   transportManifest: null,
+  economicsData: null,
   cityCache: new Map(),
   transportCache: new Map(),
   currentCells: [],
   currentRoads: [],
   selectedCity: 'all',
   activeDimensions: new Set(['cover', 'value', 'transport']),
+  economicsMetric: null,
   heightScale: 1,
   valueTint: 0.22,
   coverTint: 0.78,
   transportTint: 0.96,
+  economicsTint: 0.94,
   selectedClasses: new Set(),
   selectedRoadClasses: new Set(),
-  showLabels: true,
   showBuildings: true,
   panelsVisible: true,
   compactLegendSignature: '',
@@ -67,14 +78,18 @@ const dom = {};
 function bindDom() {
   const ids = [
     'datasetBadge', 'basemapSelect', 'tourButton', 'panelsToggle', 'resetButton', 'citySelect',
-    'coverDimension', 'valueDimension', 'transportDimension',
+    'coverDimension', 'valueDimension', 'transportDimension', 'ludDimension', 'lvyDimension',
     'heightScale', 'heightScaleOutput', 'valueTint', 'valueTintOutput',
     'coverTint', 'coverTintOutput', 'transportTint', 'transportTintOutput',
+    'economicsTint', 'economicsTintOutput',
     'classFilters', 'toggleClasses', 'roadFilters', 'toggleRoadClasses',
     'controlPanel', 'compactLegend', 'compactLegendContent',
-    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle', 'labelsToggle',
+    'landCoverFilterSection', 'transportFilterSection', 'buildingsToggle',
     'downloadButton', 'aboutButton', 'insightPanel', 'selectionTitle', 'selectionModel',
+    'generalInsightContent', 'economicsInsightContent', 'economicsSelectionTitle',
+    'economicsMetricLabel', 'economicsMetricValue', 'economicsMetricUnit', 'economicsDetails', 'economicsRanking',
     'classStatisticsBody', 'classStatisticsTotal', 'legendMin', 'legendMedian', 'legendMax',
+    'valueLegendSection', 'economicsLegendSection', 'economicsLegendTitle', 'economicsLegendMin', 'economicsLegendMax',
     'hoverCard', 'loadingOverlay', 'errorBanner',
     'aboutDialog', 'dataWarning', 'tintSection', 'heightSection'
   ];
@@ -174,7 +189,7 @@ function classLabel(cellOrKey) {
 }
 
 function cityNameFromCell(cell) {
-  return state.manifest.cities[cell[9]]?.name || 'Unknown city';
+  return state.manifest.cities[cell[9]]?.name || 'Unknown municipality';
 }
 
 function roadClassMeta(road) {
@@ -182,7 +197,7 @@ function roadClassMeta(road) {
 }
 
 function cityNameFromRoad(road) {
-  return state.manifest.cities[road[2]]?.name || 'Unknown city';
+  return state.manifest.cities[road[2]]?.name || 'Unknown municipality';
 }
 
 function normalizePrice(price) {
@@ -230,12 +245,14 @@ async function fetchJson(url) {
 }
 
 async function loadManifest() {
-  const [manifest, transportManifest] = await Promise.all([
+  const [manifest, transportManifest, economicsData] = await Promise.all([
     fetchJson('./data/manifest.json'),
-    fetchJson('./data/transport/manifest.json')
+    fetchJson('./data/transport/manifest.json'),
+    fetchJson('./data/economics/municipalities.geojson')
   ]);
   state.manifest = manifest;
   state.transportManifest = transportManifest;
+  state.economicsData = economicsData;
   manifest.classes.forEach(c => state.selectedClasses.add(c.key));
   transportManifest.classes.forEach(c => state.selectedRoadClasses.add(c.key));
   return manifest;
@@ -313,9 +330,95 @@ function filteredRoads() {
   return state.currentRoads.filter(road => state.selectedRoadClasses.has(roadClassMeta(road).key));
 }
 
+function economicsExtent() {
+  const config = ECONOMICS_CONFIG[state.economicsMetric];
+  const values = state.economicsData.features.map(feature => feature.properties[config.field]);
+  return [Math.min(...values), Math.max(...values)];
+}
+
+function economicsColor(value, alpha = 205) {
+  const [min, max] = economicsExtent();
+  const t = Math.max(0, Math.min(1, (value - min) / (max - min || 1)));
+  const scaled = t * (ECONOMICS_COLORS.length - 1);
+  const index = Math.min(ECONOMICS_COLORS.length - 2, Math.floor(scaled));
+  return mixColor(hexToRgb(ECONOMICS_COLORS[index]), hexToRgb(ECONOMICS_COLORS[index + 1]), scaled - index, alpha);
+}
+
+function formatEconomics(value, decimals) {
+  return Number(value).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+function addMunicipalEconomicsMapLayer() {
+  if (state.map.getSource(ECONOMICS_SOURCE_ID)) return;
+  state.map.addSource(ECONOMICS_SOURCE_ID, { type: 'geojson', data: state.economicsData });
+  const firstSymbol = state.map.getStyle().layers.find(layer => layer.type === 'symbol')?.id;
+  state.map.addLayer({
+    id: ECONOMICS_FILL_LAYER_ID,
+    type: 'fill',
+    source: ECONOMICS_SOURCE_ID,
+    layout: { visibility: 'none' },
+    paint: { 'fill-color': '#2c7fb8', 'fill-opacity': 0.94 }
+  }, firstSymbol);
+  state.map.addLayer({
+    id: ECONOMICS_LINE_LAYER_ID,
+    type: 'line',
+    source: ECONOMICS_SOURCE_ID,
+    layout: { visibility: 'none' },
+    paint: { 'line-color': '#f8fafc', 'line-width': 1.4, 'line-opacity': 0.95 }
+  }, firstSymbol);
+
+  state.map.on('mousemove', ECONOMICS_FILL_LAYER_ID, event => {
+    if (!state.economicsMetric || !event.features?.length) return;
+    state.map.getCanvas().style.cursor = 'pointer';
+    renderEconomicsHoverCard({ object: event.features[0], x: event.point.x, y: event.point.y });
+  });
+  state.map.on('mouseleave', ECONOMICS_FILL_LAYER_ID, () => {
+    state.map.getCanvas().style.cursor = '';
+    dom.hoverCard.hidden = true;
+  });
+  state.map.on('click', ECONOMICS_FILL_LAYER_ID, event => {
+    if (!state.economicsMetric || !event.features?.length) return;
+    const feature = event.features[0];
+    state.selectedCity = feature.properties.slug;
+    dom.citySelect.value = state.selectedCity;
+    loadSelection();
+    updateEconomicsPanel();
+    updateScene();
+    flyToCity(state.selectedCity);
+    renderEconomicsHoverCard({ object: feature, x: event.point.x, y: event.point.y }, true);
+  });
+}
+
+function updateMunicipalEconomicsMapLayer() {
+  if (!state.map?.getLayer(ECONOMICS_FILL_LAYER_ID)) return;
+  const visibility = state.economicsMetric ? 'visible' : 'none';
+  state.map.setLayoutProperty(ECONOMICS_FILL_LAYER_ID, 'visibility', visibility);
+  state.map.setLayoutProperty(ECONOMICS_LINE_LAYER_ID, 'visibility', visibility);
+  if (!state.economicsMetric) return;
+  state.map.setPaintProperty(ECONOMICS_FILL_LAYER_ID, 'fill-opacity', state.economicsTint);
+  const config = ECONOMICS_CONFIG[state.economicsMetric];
+  const [min, max] = economicsExtent();
+  state.map.setPaintProperty(ECONOMICS_FILL_LAYER_ID, 'fill-color', [
+    'interpolate', ['linear'], ['get', config.field],
+    min, ECONOMICS_COLORS[0],
+    min + (max - min) * 0.2, ECONOMICS_COLORS[1],
+    min + (max - min) * 0.4, ECONOMICS_COLORS[2],
+    min + (max - min) * 0.6, ECONOMICS_COLORS[3],
+    min + (max - min) * 0.8, ECONOMICS_COLORS[4],
+    max, ECONOMICS_COLORS[5]
+  ]);
+  state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-color', [
+    'case', ['==', ['get', 'slug'], state.selectedCity], '#5eead4', '#f8fafc'
+  ]);
+  state.map.setPaintProperty(ECONOMICS_LINE_LAYER_ID, 'line-width', [
+    'case', ['==', ['get', 'slug'], state.selectedCity], 4, 1.4
+  ]);
+}
+
 function updateScene() {
   updateCompactLegend();
   if (!state.overlay || !state.manifest) return;
+  updateMunicipalEconomicsMapLayer();
   const data = filteredCells();
   const roadData = filteredRoads();
   const gridSize = state.manifest.gridSizeM || 109.45;
@@ -325,6 +428,7 @@ function updateScene() {
     state.activeDimensions.has('value') && state.valueTint > 0
   );
   const showRoads = state.activeDimensions.has('transport') && state.transportTint > 0;
+  const showEconomics = Boolean(state.economicsMetric);
   const dimensionsKey = [...state.activeDimensions].sort().join('-') || 'none';
   const roadElevation = showGrid && state.activeDimensions.has('value') && state.heightScale > 0
     ? (8 + 540) * state.heightScale + 18
@@ -395,8 +499,8 @@ function updateScene() {
     }
   }) : null;
 
-  const cityData = state.showLabels ? state.manifest.cities : [];
-  const centerLayer = new deck.ScatterplotLayer({
+  const cityData = !showEconomics ? state.manifest.cities : [];
+  const centerLayer = !showEconomics ? new deck.ScatterplotLayer({
     id: 'city-centers',
     data: cityData,
     getPosition: d => d.center,
@@ -416,31 +520,43 @@ function updateScene() {
       loadSelection();
       flyToCity(info.object.slug);
     }
-  });
-
-  const textLayer = new deck.TextLayer({
-    id: 'city-labels',
-    data: cityData,
-    getPosition: d => d.center,
-    getText: d => String(d.name || '').normalize('NFC'),
-    characterSet: 'auto',
-    getSize: 13,
-    sizeUnits: 'pixels',
-    getColor: [242, 247, 252, 235],
-    getBackgroundColor: [5, 12, 22, 178],
-    background: true,
-    backgroundPadding: [6, 3],
-    getPixelOffset: [0, -14],
-    fontFamily: 'Inter, system-ui, sans-serif',
-    fontWeight: 650,
-    billboard: true
-  });
+  }) : null;
 
   state.overlay.setProps({
-    layers: [gridLayer, roadLayer, centerLayer, textLayer].filter(Boolean),
+    layers: [gridLayer, roadLayer, centerLayer].filter(Boolean),
     effects: [lightingEffect],
     parameters: { depthTest: true }
   });
+}
+
+function handleEconomicsHover(info) {
+  state.hoverObject = info.object || null;
+  if (!info.object) {
+    dom.hoverCard.hidden = true;
+    return;
+  }
+  renderEconomicsHoverCard(info);
+}
+
+function renderEconomicsHoverCard(info, pinned = false) {
+  const properties = info.object.properties;
+  const config = ECONOMICS_CONFIG[state.economicsMetric];
+  dom.hoverCard.classList.remove('hover-card--analytical');
+  dom.hoverCard.innerHTML = `
+    <h3>${properties.name}</h3>
+    <div class="hover-divider"></div>
+    <div class="hover-section-title">Municipal Land Economics</div>
+    <div class="hover-row"><span>${config.label}:</span><strong>${formatEconomics(properties[config.field], config.decimals)} ${config.unit}</strong></div>
+    <div class="hover-row"><span>Developed extent (2024):</span><strong>${formatEconomics(properties.developed_extent_km2_2024, 2)} km²</strong></div>
+    <div class="hover-row"><span>GVA:CS+I (2023):</span><strong>US$ ${formatEconomics(properties.gva_csi_usd_million_2023, 3)} million</strong></div>
+    <div class="hover-row"><span>Developed land value (2024):</span><strong>US$ ${formatEconomics(properties.developed_land_value_usd_million_2024, 2)} million</strong></div>
+    ${pinned ? '<div class="hover-row"><span>Selection</span><strong>pinned</strong></div>' : ''}
+  `;
+  dom.hoverCard.hidden = false;
+  const width = 300;
+  const pad = 14;
+  dom.hoverCard.style.left = `${Math.min(window.innerWidth - width - pad, Math.max(pad, info.x + 18))}px`;
+  dom.hoverCard.style.top = `${Math.min(window.innerHeight - 230, Math.max(pad, info.y + 18))}px`;
 }
 
 function handleRoadHover(info) {
@@ -455,6 +571,7 @@ function handleRoadHover(info) {
 function renderRoadHoverCard(info, pinned = false) {
   const road = info.object;
   const meta = roadClassMeta(road);
+  dom.hoverCard.classList.remove('hover-card--analytical');
   dom.hoverCard.innerHTML = `
     <h3>${cityNameFromRoad(road)}</h3>
     <div class="hover-row"><span>Transport class</span><strong class="hover-class"><i style="background:${meta.color}"></i>${meta.label}</strong></div>
@@ -491,20 +608,25 @@ function renderHoverCard(info, pinned = false) {
   const pointwiseWidth = cell[6];
   const q10 = cell[7];
   const q90 = cell[8];
+  dom.hoverCard.classList.add('hover-card--analytical');
   dom.hoverCard.innerHTML = `
     <h3>${cityNameFromCell(cell)}</h3>
-    <div class="hover-row"><span>Land-cover class</span><strong class="hover-class"><i style="background:${CLASS_COLORS[key]}"></i>${classLabel(key)}</strong></div>
-    <div class="hover-row"><span>Classification confidence</span><strong>${(confidence * 100).toFixed(1)}%</strong></div>
-    <div class="hover-row"><span>10th predictive quantile (Q₀.₁₀)</span><strong>${formatCurrency(q10)}</strong></div>
-    <div class="hover-row"><span>Median unit land value (Q₀.₅₀)</span><strong>${formatCurrency(cell[2])}</strong></div>
-    <div class="hover-row"><span>90th predictive quantile (Q₀.₉₀)</span><strong>${formatCurrency(q90)}</strong></div>
-    <div class="hover-row"><span>Normalised interval width (wᵢ*)</span><strong>${pointwiseWidth.toFixed(4)}</strong></div>
+    <div class="hover-divider"></div>
+    <div class="hover-section-title">Urban Land Cover</div>
+    <div class="hover-row"><span>Land cover category:</span><strong class="hover-class"><i style="background:${CLASS_COLORS[key]}"></i>${classLabel(key)}</strong></div>
+    <div class="hover-row"><span>Land cover category classification confidence:</span><strong>${(confidence * 100).toFixed(1)}%</strong></div>
+    <div class="hover-divider"></div>
+    <div class="hover-section-title">Urban Land Value</div>
+    <div class="hover-row"><span>10th percentile:</span><strong>${formatCurrency(q10)}</strong></div>
+    <div class="hover-row"><span>50th percentile:</span><strong>${formatCurrency(cell[2])}</strong></div>
+    <div class="hover-row"><span>90th percentile:</span><strong>${formatCurrency(q90)}</strong></div>
+    <div class="hover-row"><span>Land value prediction normalised interval:</span><strong>${pointwiseWidth.toFixed(4)}</strong></div>
     ${pinned ? '<div class="hover-row"><span>Selection</span><strong>pinned</strong></div>' : ''}
   `;
   dom.hoverCard.hidden = false;
   const pad = 14;
-  const width = 230;
-  const height = 225;
+  const width = Math.min(320, window.innerWidth - pad * 2);
+  const height = 300;
   const x = Math.min(window.innerWidth - width - pad, Math.max(pad, info.x + 18));
   const y = Math.min(window.innerHeight - height - pad, Math.max(pad, info.y + 18));
   dom.hoverCard.style.left = `${x}px`;
@@ -512,6 +634,15 @@ function renderHoverCard(info, pinned = false) {
 }
 
 function updateStatistics() {
+  if (state.economicsMetric) {
+    dom.insightPanel.style.display = '';
+    dom.generalInsightContent.hidden = true;
+    dom.economicsInsightContent.hidden = false;
+    updateEconomicsPanel();
+    return;
+  }
+  dom.generalInsightContent.hidden = false;
+  dom.economicsInsightContent.hidden = true;
   const showCellStatistics = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
   dom.insightPanel.style.display = showCellStatistics ? '' : 'none';
   if (!showCellStatistics) return;
@@ -523,7 +654,7 @@ function updateStatistics() {
   if (!selectedItems.length) {
     const empty = document.createElement('tr');
     empty.className = 'class-statistics-empty';
-    empty.innerHTML = '<td colspan="6">No land-cover class selected</td>';
+    empty.innerHTML = '<td colspan="6">No land-cover category selected</td>';
     dom.classStatisticsBody.appendChild(empty);
     return;
   }
@@ -562,9 +693,42 @@ function updateStatistics() {
   dom.classStatisticsTotal.appendChild(totalRow);
 }
 
+function updateEconomicsPanel() {
+  if (!state.economicsMetric) return;
+  const config = ECONOMICS_CONFIG[state.economicsMetric];
+  const features = state.economicsData.features;
+  const selected = features.find(feature => feature.properties.slug === state.selectedCity);
+  const rows = features.map(feature => feature.properties);
+  const totals = rows.reduce((acc, item) => ({
+    extent: acc.extent + item.developed_extent_km2_2024,
+    gva: acc.gva + item.gva_csi_usd_million_2023,
+    land: acc.land + item.developed_land_value_usd_million_2024
+  }), { extent: 0, gva: 0, land: 0 });
+  const aggregate = state.economicsMetric === 'lud' ? totals.gva / totals.extent : totals.gva / totals.land;
+  const item = selected?.properties;
+  const value = item ? item[config.field] : aggregate;
+  dom.economicsSelectionTitle.textContent = item ? item.name : 'All 12 municipalities';
+  dom.economicsMetricLabel.textContent = config.label;
+  dom.economicsMetricValue.textContent = formatEconomics(value, config.decimals);
+  dom.economicsMetricUnit.textContent = config.unit;
+  dom.economicsDetails.innerHTML = `
+    <div><dt>Developed extent · 2024</dt><dd>${formatEconomics(item ? item.developed_extent_km2_2024 : totals.extent, 2)} km²</dd></div>
+    <div><dt>GVA:CS+I · 2023</dt><dd>US$ ${formatEconomics(item ? item.gva_csi_usd_million_2023 : totals.gva, 3)} million</dd></div>
+    <div><dt>Developed land value · 2024</dt><dd>US$ ${formatEconomics(item ? item.developed_land_value_usd_million_2024 : totals.land, 2)} million</dd></div>
+  `;
+  const ordered = [...rows].sort((a, b) => b[config.field] - a[config.field]);
+  const max = ordered[0][config.field];
+  dom.economicsRanking.innerHTML = ordered.map(row => `
+    <li class="${row.slug === state.selectedCity ? 'is-selected' : ''}">
+      <span>${row.name}</span><strong>${formatEconomics(row[config.field], config.decimals)}</strong>
+      <i style="--bar-width:${row[config.field] / max * 100}%"></i>
+    </li>`).join('');
+}
+
 function updateSelectionTitle() {
   const city = state.manifest.cities.find(c => c.slug === state.selectedCity);
   dom.selectionTitle.textContent = city ? city.name : 'All';
+  updateEconomicsPanel();
 }
 
 function populateControls() {
@@ -613,9 +777,9 @@ function populateControls() {
     dom.roadFilters.appendChild(row);
   });
 
-  dom.legendMin.textContent = formatCurrency(state.manifest.globalStats.min, true).replace('/m²', '');
-  dom.legendMedian.textContent = formatCurrency(state.manifest.globalStats.median, true).replace('/m²', '');
-  dom.legendMax.textContent = formatCurrency(state.manifest.globalStats.max, true).replace('/m²', '');
+  dom.legendMin.textContent = formatCurrency(state.manifest.globalStats.min, true);
+  dom.legendMedian.textContent = formatCurrency(state.manifest.globalStats.median, true);
+  dom.legendMax.textContent = formatCurrency(state.manifest.globalStats.max, true);
 
   const isDemo = state.manifest.datasetMode === 'demo';
   dom.datasetBadge.textContent = isDemo ? 'Demo data' : 'Model output';
@@ -635,6 +799,7 @@ function updateToggleRoadClassesLabel() {
 }
 
 function updateDimensionControls() {
+  const economicsVisible = Boolean(state.economicsMetric);
   const coverVisible = state.activeDimensions.has('cover');
   const valueVisible = state.activeDimensions.has('value');
   const roadsVisible = state.activeDimensions.has('transport');
@@ -644,9 +809,23 @@ function updateDimensionControls() {
   dom.valueTint.disabled = !valueVisible;
   dom.coverTint.disabled = !coverVisible;
   dom.transportTint.disabled = !roadsVisible;
+  dom.economicsTint.disabled = !economicsVisible;
   dom.landCoverFilterSection.classList.toggle('is-inactive', !coverVisible);
   dom.transportFilterSection.classList.toggle('is-inactive', !roadsVisible);
-  dom.downloadButton.disabled = !cellsVisible && !roadsVisible;
+  dom.valueLegendSection.classList.toggle('is-inactive', !valueVisible);
+  dom.economicsLegendSection.hidden = !economicsVisible;
+  if (economicsVisible) {
+    const config = ECONOMICS_CONFIG[state.economicsMetric];
+    const [min, max] = economicsExtent();
+    dom.economicsLegendTitle.textContent = `${config.label} · ${config.unit}`;
+    dom.economicsLegendMin.textContent = formatEconomics(min, config.decimals);
+    dom.economicsLegendMax.textContent = formatEconomics(max, config.decimals);
+  }
+  dom.downloadButton.disabled = economicsVisible ? false : !cellsVisible && !roadsVisible;
+  if (economicsVisible) {
+    dom.downloadButton.textContent = '↓ Export municipal economics';
+    return;
+  }
   dom.downloadButton.textContent = cellsVisible
     ? '↓ Export visible cells'
     : roadsVisible
@@ -661,6 +840,7 @@ function updateCompactLegend() {
     dimensions: [...state.activeDimensions].sort(),
     classes: [...state.selectedClasses].sort(),
     roads: [...state.selectedRoadClasses].sort(),
+    economics: state.economicsMetric,
     valueHeight: state.heightScale > 0
   });
 
@@ -675,7 +855,7 @@ function updateCompactLegend() {
               <i class="compact-swatch" style="background:${CLASS_COLORS[item.key]}"></i>
               <span>${CLASS_SHORT_LABELS[item.key] || item.label}</span>
             </div>`).join('')
-        : '<div class="compact-value-note">No land-cover classes selected.</div>';
+        : '<div class="compact-value-note">No land-cover categories selected.</div>';
       sections.push(`
         <section class="compact-legend-section">
           <h3 class="compact-legend-heading">Urban land cover</h3>
@@ -717,6 +897,17 @@ function updateCompactLegend() {
         </section>`);
     }
 
+    if (state.economicsMetric) {
+      const config = ECONOMICS_CONFIG[state.economicsMetric];
+      const [min, max] = economicsExtent();
+      sections.push(`
+        <section class="compact-legend-section">
+          <h3 class="compact-legend-heading">${config.label} · ${config.unit}</h3>
+          <div class="compact-value-gradient"></div>
+          <div class="compact-value-labels"><span>${formatEconomics(min, config.decimals)}</span><span>${formatEconomics(max, config.decimals)}</span></div>
+        </section>`);
+    }
+
     dom.compactLegendContent.innerHTML = sections.length
       ? `<h2 class="compact-legend-title">Visible map legend</h2>${sections.join('')}`
       : '';
@@ -751,8 +942,19 @@ function wireEvents() {
     ['transport', dom.transportDimension]
   ].forEach(([dimension, input]) => {
     input.addEventListener('change', () => {
+      if (input.checked && state.economicsMetric) deactivateEconomics(true);
       if (input.checked) state.activeDimensions.add(dimension);
       else state.activeDimensions.delete(dimension);
+      updateDimensionControls();
+      updateScene();
+      updateStatistics();
+    });
+  });
+
+  [['lud', dom.ludDimension], ['lvy', dom.lvyDimension]].forEach(([metric, input]) => {
+    input.addEventListener('change', () => {
+      if (input.checked) activateEconomics(metric);
+      else if (state.economicsMetric === metric) deactivateEconomics(true);
       updateDimensionControls();
       updateScene();
       updateStatistics();
@@ -768,7 +970,8 @@ function wireEvents() {
   [
     ['valueTint', 'valueTintOutput'],
     ['coverTint', 'coverTintOutput'],
-    ['transportTint', 'transportTintOutput']
+    ['transportTint', 'transportTintOutput'],
+    ['economicsTint', 'economicsTintOutput']
   ].forEach(([controlId, outputId]) => {
     dom[controlId].addEventListener('input', () => {
       state[controlId] = Number(dom[controlId].value);
@@ -799,11 +1002,6 @@ function wireEvents() {
   dom.buildingsToggle.addEventListener('change', () => {
     state.showBuildings = dom.buildingsToggle.checked;
     setBuildingsVisibility();
-  });
-
-  dom.labelsToggle.addEventListener('change', () => {
-    state.showLabels = dom.labelsToggle.checked;
-    updateScene();
   });
 
   dom.panelsToggle.addEventListener('click', () => {
@@ -843,7 +1041,46 @@ function wireEvents() {
   });
 }
 
+function activateEconomics(metric) {
+  state.economicsMetric = metric;
+  state.activeDimensions.clear();
+  dom.coverDimension.checked = false;
+  dom.valueDimension.checked = false;
+  dom.transportDimension.checked = false;
+  dom.ludDimension.checked = metric === 'lud';
+  dom.lvyDimension.checked = metric === 'lvy';
+  dom.hoverCard.hidden = true;
+}
+
+function deactivateEconomics(restoreSpatial) {
+  state.economicsMetric = null;
+  dom.ludDimension.checked = false;
+  dom.lvyDimension.checked = false;
+  if (restoreSpatial) {
+    state.activeDimensions = new Set(['cover', 'value', 'transport']);
+    dom.coverDimension.checked = true;
+    dom.valueDimension.checked = true;
+    dom.transportDimension.checked = true;
+  }
+  dom.hoverCard.hidden = true;
+}
+
 function exportVisibleData() {
+  if (state.economicsMetric) {
+    const config = ECONOMICS_CONFIG[state.economicsMetric];
+    const rows = ['municipality,developed_extent_km2_2024,gva_csi_usd_million_2023,lud_2023_2024,developed_land_value_usd_million_2024,lvy_2023_2024'];
+    state.economicsData.features.forEach(feature => {
+      const p = feature.properties;
+      rows.push([JSON.stringify(p.name), p.developed_extent_km2_2024, p.gva_csi_usd_million_2023, p.lud_2023_2024, p.developed_land_value_usd_million_2024, p.lvy_2023_2024].join(','));
+    });
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `urban-twin-municipal-${config.label.slice(0, 3).toLowerCase()}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    return;
+  }
   const cellsVisible = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
   const roadsVisible = state.activeDimensions.has('transport');
   if (roadsVisible && !cellsVisible) {
@@ -926,7 +1163,7 @@ function startTour() {
 function stopTour() {
   if (state.tourTimer) window.clearInterval(state.tourTimer);
   state.tourTimer = null;
-  dom.tourButton.textContent = '▶ City tour';
+  dom.tourButton.textContent = '▶ Municipality tour';
 }
 
 function add3DBuildings() {
@@ -1050,6 +1287,7 @@ function initMap() {
       state.overlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });
       state.map.addControl(state.overlay);
       addSatelliteBasemap();
+      addMunicipalEconomicsMapLayer();
       add3DBuildings();
       resetRegionalView();
       resolve();

@@ -22,7 +22,8 @@ def main() -> None:
     css = MAP3D / "assets" / "styles.css"
     manifest_path = MAP3D / "data" / "manifest.json"
     transport_manifest_path = MAP3D / "data" / "transport" / "manifest.json"
-    for path in (landing, index, app, css, manifest_path, transport_manifest_path):
+    economics_path = MAP3D / "data" / "economics" / "municipalities.geojson"
+    for path in (landing, index, app, css, manifest_path, transport_manifest_path, economics_path):
         if not path.exists():
             fail(f"Missing {path.relative_to(ROOT)}")
 
@@ -33,7 +34,8 @@ def main() -> None:
     required_ids = [
         "map", "citySelect", "coverDimension", "valueDimension", "transportDimension",
         "heightScale", "valueTint", "coverTint", "transportTint", "classFilters",
-        "roadFilters", "toggleRoadClasses", "loadingOverlay", "aboutDialog"
+        "roadFilters", "toggleRoadClasses", "ludDimension", "lvyDimension",
+        "economicsInsightContent", "loadingOverlay", "aboutDialog"
     ]
     for element_id in required_ids:
         if not re.search(rf'id=["\']{re.escape(element_id)}["\']', html):
@@ -143,10 +145,42 @@ def main() -> None:
     if transport.get("globalStats", {}).get("segments") != total_roads:
         fail("Global transport count does not match city files")
 
+    economics = json.loads(economics_path.read_text(encoding="utf-8"))
+    features = economics.get("features", [])
+    if economics.get("type") != "FeatureCollection" or len(features) != len(cities):
+        fail("Municipal economics GeoJSON must contain one feature per municipality")
+    economics_slugs = {feature.get("properties", {}).get("slug") for feature in features}
+    if economics_slugs != {item.get("slug") for item in cities}:
+        fail("Municipal economics GeoJSON and analytical manifest cover different municipalities")
+    required_economics = {
+        "developed_extent_km2_2024", "gva_csi_usd_million_2023", "lud_2023_2024",
+        "developed_land_value_usd_million_2024", "lvy_2023_2024"
+    }
+    for feature in features:
+        properties = feature.get("properties", {})
+        if not required_economics.issubset(properties):
+            fail(f"Incomplete economics data for {properties.get('slug', 'unknown')}")
+        if not feature.get("geometry"):
+            fail(f"Missing economics geometry for {properties.get('slug', 'unknown')}")
+
+        def coordinates(value):
+            if (isinstance(value, list) and len(value) >= 2
+                    and all(isinstance(item, (int, float)) for item in value[:2])):
+                yield value
+            elif isinstance(value, list):
+                for item in value:
+                    yield from coordinates(item)
+
+        geometry = feature["geometry"]
+        geometries = geometry.get("geometries", [geometry])
+        points = [point for part in geometries for point in coordinates(part.get("coordinates", []))]
+        if not points or not all(-180 <= point[0] <= 180 and -90 <= point[1] <= 90 for point in points):
+            fail(f"Economics geometry is not EPSG:4326 for {properties.get('slug', 'unknown')}")
+
     print(
         f"Validated static site: {len(cities)} cities, {len(classes)} classes, "
         f"{total:,} cells, {total_roads:,} unique OSM road geometries, "
-        f"datasetMode={manifest.get('datasetMode')}"
+        f"{len(features)} municipal economics polygons, datasetMode={manifest.get('datasetMode')}"
     )
 
 

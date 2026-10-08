@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Municipal Land Economics — LUD and LVY Preview</title>
+  <style>
+    :root { color-scheme: dark; --bg:#07111e; --panel:#0a1828; --panel-2:#0d2033; --line:rgba(223,235,247,.12); --text:#e6eef7; --muted:#8ca0b5; --accent:#5eead4; }
+    * { box-sizing:border-box; }
+    body { min-height:100vh; margin:0; background:radial-gradient(circle at 22% 5%,#153450 0,transparent 34%),var(--bg); color:var(--text); font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .app { min-height:100vh; display:grid; grid-template-rows:64px 1fr; }
+    header { display:flex; align-items:center; justify-content:space-between; padding:0 22px; background:rgba(7,17,30,.9); border-bottom:1px solid var(--line); }
+    header strong { display:block; font-size:14px; font-weight:700; } header span { color:var(--muted); font-size:11px; }
+    .status { padding:6px 9px; color:var(--accent); background:rgba(94,234,212,.09); border-radius:5px; font-size:10px; font-weight:800; letter-spacing:.08em; }
+    .layout { display:grid; grid-template-columns:252px minmax(430px,1fr) 286px; min-height:0; }
+    aside { padding:18px; background:rgba(10,24,40,.96); } .left { border-right:1px solid var(--line); } .right { border-left:1px solid var(--line); }
+    .eyebrow { margin:0 0 7px; color:#7790a9; font-size:9px; font-weight:800; letter-spacing:.1em; }
+    .select { display:flex; justify-content:space-between; padding:9px 10px; border:1px solid var(--line); border-radius:7px; background:#112339; color:#dbe6f0; font-size:11px; }
+    .section { margin-top:20px; padding-top:16px; border-top:1px solid var(--line); } .section h2 { margin:0 0 10px; color:#7891aa; font-size:10px; letter-spacing:.09em; }
+    .option { display:grid; grid-template-columns:16px 1fr; gap:9px; width:100%; padding:11px 9px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--text); text-align:left; cursor:pointer; }
+    .option:hover { background:rgba(255,255,255,.035); } .option[aria-pressed="true"] { border-color:rgba(94,234,212,.45); background:rgba(94,234,212,.08); }
+    .option .dot { width:12px; height:12px; margin-top:2px; border:1px solid #6d839b; border-radius:50%; } .option[aria-pressed="true"] .dot { border:3px solid var(--accent); }
+    .option strong { display:block; font-size:11px; } .option small { display:block; margin-top:3px; color:var(--muted); font-size:10px; line-height:1.35; }
+    main { position:relative; min-height:640px; overflow:hidden; background:radial-gradient(circle at 20% 32%,rgba(49,93,84,.42),transparent 22%),radial-gradient(circle at 75% 71%,rgba(106,78,42,.48),transparent 27%),#10202a; }
+    main:before { content:""; position:absolute; inset:0; opacity:.34; background-image:linear-gradient(31deg,transparent 47%,rgba(222,231,239,.15) 48%,rgba(222,231,239,.15) 49%,transparent 50%),linear-gradient(-18deg,transparent 52%,rgba(222,231,239,.1) 53%,rgba(222,231,239,.1) 54%,transparent 55%); background-size:94px 74px,132px 108px; }
+    .road { position:absolute; z-index:1; height:2px; background:rgba(236,242,247,.43); transform-origin:left center; } .road.a { width:78%; left:8%; top:48%; transform:rotate(-8deg); } .road.b { width:62%; left:27%; top:30%; transform:rotate(22deg); } .road.c { width:57%; left:15%; top:76%; transform:rotate(-28deg); }
+    .legend { position:absolute; z-index:3; right:17px; bottom:18px; width:205px; padding:11px; border:1px solid var(--line); border-radius:8px; background:rgba(6,15,25,.9); } .legend strong { display:block; margin-bottom:7px; font-size:10px; } .gradient { height:10px; border-radius:5px; background:linear-gradient(90deg,#2d3f8f,#2472b5,#24aaa1,#e4b84d,#ef663c); } .legend-labels { display:flex; justify-content:space-between; margin-top:6px; color:#8fa1b3; font-size:9px; }
+    #marks { position:absolute; inset:0; z-index:2; } .municipality { position:absolute; transform:translate(-50%,-50%); border:0; border-radius:50%; color:#fff; background:var(--color); box-shadow:0 0 0 2px rgba(255,255,255,.32),0 10px 24px rgba(0,0,0,.3); cursor:pointer; } .municipality:hover,.municipality:focus { outline:2px solid var(--accent); outline-offset:3px; } .municipality span { position:absolute; top:calc(100% + 7px); left:50%; transform:translateX(-50%); color:#eff6fc; font-size:10px; font-weight:650; text-shadow:0 1px 3px #000; white-space:nowrap; }
+    .map-popup { position:absolute; z-index:5; min-width:178px; padding:11px; border:1px solid rgba(255,255,255,.16); border-radius:8px; background:rgba(5,14,24,.95); box-shadow:0 14px 34px rgba(0,0,0,.42); pointer-events:none; transform:translate(13px,-108%); } .map-popup[hidden] { display:none; } .map-popup strong { display:block; font-size:12px; } .map-popup span { display:block; margin-top:4px; color:#91a5b8; font-size:9px; } .map-popup b { display:block; margin-top:4px; color:#5eead4; font-size:19px; font-variant-numeric:tabular-nums; }
+    .right h2 { margin:5px 0 15px; font-size:20px; } .selected { padding:13px; border-radius:8px; background:linear-gradient(135deg,rgba(94,234,212,.13),rgba(239,102,60,.08)); } .selected small { color:#8ba1b7; font-size:9px; font-weight:700; letter-spacing:.06em; } .selected strong { display:block; margin-top:6px; color:var(--accent); font-size:29px; font-variant-numeric:tabular-nums; }
+    .default-panel { padding:13px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.025); } .default-panel strong { display:block; font-size:11px; } .default-panel p { margin:6px 0 0; color:#91a5b8; font-size:10px; line-height:1.45; } .default-panel hr { margin:12px 0; border:0; border-top:1px solid rgba(255,255,255,.08); } .default-row { display:flex; justify-content:space-between; padding:5px 0; color:#8ea2b6; font-size:10px; } .default-row b { color:#dbe6f0; font-weight:600; }
+    .details { margin:14px 0; } .details div { display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.07); } .details dt { color:#8ea1b4; font-size:10px; } .details dd { margin:0; color:#e0eaf3; font-size:10px; font-variant-numeric:tabular-nums; }
+    .ranking-title { margin:18px 0 8px; color:#7891aa; font-size:9px; font-weight:800; letter-spacing:.08em; } #ranking { list-style:none; margin:0; padding:0; } #ranking li { display:grid; grid-template-columns:1fr 48px; gap:3px 7px; align-items:center; margin:8px 0; } #ranking b,#ranking strong { font-size:10px; font-weight:600; } #ranking strong { text-align:right; font-variant-numeric:tabular-nums; } #ranking i { grid-column:1/-1; width:var(--width); height:5px; border-radius:3px; background:linear-gradient(90deg,#24aaa1,#ef663c); }
+    @media (max-width:920px) { .layout { grid-template-columns:225px minmax(330px,1fr); } .right { grid-column:1/-1; display:grid; grid-template-columns:180px 1fr 1fr; gap:16px; border-top:1px solid var(--line); border-left:0; } .right .eyebrow,.right h2 { grid-column:1; } .selected { grid-column:2; grid-row:1/3; } .details { grid-column:3; grid-row:1/3; } .ranking-title,#ranking { display:none; } }
+    @media (max-width:640px) { .layout { grid-template-columns:1fr; } .left { border-right:0; border-bottom:1px solid var(--line); } main { min-height:520px; } .right { display:block; } header { padding:0 14px; } header strong { font-size:11px; } }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header><div><strong>Urban Land Cover, Unit Land Value and Transport</strong><span>Northern Paraná, Brazil · 2024</span></div><span class="status">MODEL OUTPUT</span></header>
+    <div class="layout">
+      <aside class="left">
+        <p class="eyebrow">MUNICIPALITY</p><div class="select">All 12 municipalities <span>⌄</span></div>
+        <div class="section"><h2>MUNICIPAL LAND ECONOMICS</h2>
+          <button id="ludButton" class="option" type="button" aria-pressed="true"><i class="dot"></i><span><strong>LUD (2023/2024)</strong><small>GVA:CS+I per developed urban extent<br>US$ million / km²</small></span></button>
+          <button id="lvyButton" class="option" type="button" aria-pressed="false"><i class="dot"></i><span><strong>LVY (2023/2024)</strong><small>GVA:CS+I / developed-land value<br>year⁻¹</small></span></button>
+        </div>
+      </aside>
+      <main aria-label="Municipal Land Economics map preview">
+        <div class="road a"></div><div class="road b"></div><div class="road c"></div>
+        <div id="marks"></div><div id="mapPopup" class="map-popup" role="status" hidden></div>
+        <div id="legend" class="legend"><strong id="legendTitle">LUD · US$ million / km²</strong><div class="gradient"></div><div class="legend-labels"><span id="legendMin"></span><span id="legendMax"></span></div></div>
+      </main>
+      <aside class="right"><p id="rightEyebrow" class="eyebrow">SELECTED MUNICIPALITY</p><h2 id="selectedName">All</h2><div id="defaultPanel" class="default-panel"><strong>Visible map statistics</strong><p>The existing general analytics panel remains active while no municipal economics metric is selected.</p><hr><div class="default-row"><span>Land-cover categories</span><b>All selected</b></div><div class="default-row"><span>Land-value statistics</span><b>Visible</b></div></div><div id="economicsPanel" hidden><div class="selected"><small id="selectedMetric">LUD (2023/2024)</small><strong id="selectedValue"></strong></div><dl id="details" class="details"></dl><p class="ranking-title">MUNICIPAL RANKING</p><ol id="ranking"></ol></div></aside>
+    </div>
+  </div>
+  <script>
+    const municipalities = [
+      {name:'Ibiporã', x:77, y:24, extent:14.60, gva:485.805, lud:33.274, land:1326.21, lvy:0.3663},
+      {name:'Marialva', x:28, y:55, extent:9.84, gva:366.556, lud:37.252, land:1030.58, lvy:0.3557},
+      {name:'Mandaguari', x:39, y:63, extent:9.83, gva:339.370, lud:34.524, land:989.03, lvy:0.3431},
+      {name:'Rolândia', x:63, y:33, extent:19.20, gva:577.607, lud:30.084, land:1863.82, lvy:0.3099},
+      {name:'Cambé', x:69, y:29, extent:26.33, gva:811.391, lud:30.816, land:3084.83, lvy:0.2630},
+      {name:'Apucarana', x:65, y:76, extent:34.16, gva:555.156, lud:16.252, land:2866.91, lvy:0.1936},
+      {name:'Maringá', x:15, y:47, extent:91.67, gva:3623.476, lud:39.527, land:18859.39, lvy:0.1921},
+      {name:'Londrina', x:86, y:43, extent:106.95, gva:3530.053, lud:33.007, land:18423.49, lvy:0.1916},
+      {name:'Cambira', x:55, y:85, extent:2.09, gva:28.420, lud:13.598, land:159.25, lvy:0.1785},
+      {name:'Jandaia do Sul', x:49, y:85, extent:6.93, gva:108.470, lud:15.652, land:609.39, lvy:0.1780},
+      {name:'Arapongas', x:58, y:58, extent:33.91, gva:678.706, lud:20.015, land:3992.39, lvy:0.1700},
+      {name:'Sarandi', x:22, y:49, extent:19.00, gva:251.817, lud:13.254, land:2228.63, lvy:0.1130}
+    ];
+    const config = {
+      lud: {title:'Estimated LUD', subtitle:'Economic intensity per developed urban km²', legend:'LUD · US$ million / km²', unit:'US$ million / km²', field:'lud', decimals:3, preferred:'Maringá'},
+      lvy: {title:'Estimated LVY', subtitle:'Economic-output proxy relative to developed-land value', legend:'LVY · year⁻¹', unit:'year⁻¹', field:'lvy', decimals:4, preferred:'Ibiporã'}
+    };
+    let active = null, selected = null, pinned = null;
+    const fmt = (value, digits) => value.toFixed(digits);
+    const color = t => { const stops=[[45,63,143],[36,114,181],[36,170,161],[228,184,77],[239,102,60]]; const n=stops.length-1, p=Math.max(0,Math.min(1,t))*n, i=Math.min(n-1,Math.floor(p)), u=p-i; const c=stops[i].map((v,j)=>Math.round(v+(stops[i+1][j]-v)*u)); return `rgb(${c.join(',')})`; };
+    function render() {
+      if (!active) {
+        document.getElementById('legend').hidden=true; document.getElementById('marks').innerHTML=''; document.getElementById('mapPopup').hidden=true; document.getElementById('ludButton').setAttribute('aria-pressed','false'); document.getElementById('lvyButton').setAttribute('aria-pressed','false'); document.getElementById('selectedName').textContent='All'; document.getElementById('rightEyebrow').textContent='SELECTED MUNICIPALITY'; document.getElementById('defaultPanel').hidden=false; document.getElementById('economicsPanel').hidden=true; return;
+      }
+      const c=config[active], values=municipalities.map(d=>d[c.field]), lo=Math.min(...values), hi=Math.max(...values);
+      document.getElementById('legend').hidden=false; document.getElementById('defaultPanel').hidden=true; document.getElementById('economicsPanel').hidden=false;
+      document.getElementById('legendTitle').textContent=c.legend; document.getElementById('legendMin').textContent=fmt(lo,c.decimals); document.getElementById('legendMax').textContent=fmt(hi,c.decimals);
+      document.getElementById('ludButton').setAttribute('aria-pressed', active==='lud'); document.getElementById('lvyButton').setAttribute('aria-pressed', active==='lvy');
+      const marks=document.getElementById('marks'); marks.innerHTML='';
+      municipalities.forEach(d=>{ const value=d[c.field], t=(value-lo)/(hi-lo), b=document.createElement('button'); b.className='municipality'; b.style.left=`${d.x}%`; b.style.top=`${d.y}%`; b.style.width=b.style.height=`${30+30*t}px`; b.style.setProperty('--color',color(t)); b.setAttribute('aria-label',`${d.name}: ${fmt(value,c.decimals)} ${c.unit}`); b.innerHTML=`<span>${d.name}</span>`; b.addEventListener('mouseenter',()=>showPopup(d)); b.addEventListener('focus',()=>showPopup(d)); b.addEventListener('mouseleave',()=>{if(!pinned) hidePopup();}); b.addEventListener('blur',()=>{if(!pinned) hidePopup();}); b.addEventListener('click',()=>{selected=d; pinned=d; renderDetails(); showPopup(d);}); marks.appendChild(b); });
+      renderDetails();
+      if (pinned) showPopup(pinned);
+    }
+    function showPopup(d) { const c=config[active], popup=document.getElementById('mapPopup'); popup.style.left=`${d.x}%`; popup.style.top=`${d.y}%`; popup.innerHTML=`<strong>${d.name}</strong><span>${c.title} · ${c.unit}</span><b>${fmt(d[c.field],c.decimals)}</b>`; popup.hidden=false; }
+    function hidePopup() { document.getElementById('mapPopup').hidden=true; }
+    function renderDetails() {
+      const c=config[active], value=selected[c.field]; document.getElementById('selectedName').textContent=selected.name; document.getElementById('selectedMetric').textContent=`${c.title.toUpperCase()} (2023/2024)`; document.getElementById('selectedValue').textContent=fmt(value,c.decimals);
+      document.getElementById('details').innerHTML=`<div><dt>Developed extent · 2024</dt><dd>${fmt(selected.extent,2)} km²</dd></div><div><dt>GVA:CS+I · 2023</dt><dd>US$ ${fmt(selected.gva,3)} m</dd></div><div><dt>Developed land value · 2024</dt><dd>US$ ${fmt(selected.land,2)} m</dd></div>`;
+      const ordered=[...municipalities].sort((a,b)=>b[c.field]-a[c.field]); const max=ordered[0][c.field]; document.querySelector('.ranking-title').textContent='MUNICIPAL RANKING'; document.getElementById('ranking').innerHTML=ordered.map(d=>`<li><b>${d.name}</b><strong>${fmt(d[c.field],c.decimals)}</strong><i style="--width:${(d[c.field]/max)*100}%"></i></li>`).join('');
+    }
+    document.getElementById('ludButton').addEventListener('click',()=>{active=active==='lud'?null:'lud'; selected=active?municipalities.find(d=>d.name===config[active].preferred):null; pinned=null; render();});
+    document.getElementById('lvyButton').addEventListener('click',()=>{active=active==='lvy'?null:'lvy'; selected=active?municipalities.find(d=>d.name===config[active].preferred):null; pinned=null; render();});
+    render();
+  </script>
+</body>
+</html>

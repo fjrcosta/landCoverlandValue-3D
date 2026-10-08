@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Urban Twin — Hover Pop-up Preview</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --text: #e8f0f8;
+      --muted: #91a3b8;
+      --accent: #5eead4;
+      --line: rgba(255, 255, 255, .12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px;
+      background:
+        linear-gradient(rgba(4, 10, 18, .52), rgba(4, 10, 18, .78)),
+        radial-gradient(circle at 34% 28%, #315b55 0 3%, transparent 3.3%),
+        radial-gradient(circle at 63% 57%, #735b40 0 4%, transparent 4.3%),
+        repeating-linear-gradient(23deg, transparent 0 34px, rgba(225, 233, 242, .10) 35px 37px, transparent 38px 71px),
+        #172635;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .preview-stage {
+      min-height: calc(100vh - 56px);
+      display: grid;
+      grid-template-columns: minmax(260px, 320px) minmax(320px, 1fr);
+      align-items: center;
+      gap: clamp(36px, 10vw, 150px);
+      width: min(920px, 100%);
+      margin: 0 auto;
+    }
+
+    .preview-label {
+      position: fixed;
+      top: 20px;
+      left: 22px;
+      margin: 0;
+      color: rgba(232, 240, 248, .72);
+      font-size: 12px;
+      letter-spacing: .04em;
+    }
+
+    .control-panel {
+      width: 100%;
+      padding: 18px;
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 16px;
+      background: rgba(8, 18, 32, .91);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .42);
+      backdrop-filter: blur(18px);
+    }
+
+    .panel-caption {
+      margin: 0 0 18px;
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .legend-block {
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .legend-title {
+      margin-bottom: 8px;
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 750;
+    }
+
+    .legend-title span {
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .value-gradient {
+      height: 11px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #000080, #0040ff, #00bfff, #00ffff, #00ff80, #00ff00, #bfff00, #ffff00, #ff8000, #ff0000);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14);
+    }
+
+    .gradient-labels {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 10px;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .hover-card {
+      width: 320px;
+      max-width: calc(100vw - 56px);
+      padding: 11px 12px;
+      border: 1px solid rgba(255, 255, 255, .13);
+      border-radius: 12px;
+      background: rgba(8, 18, 32, .91);
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .52);
+      backdrop-filter: blur(18px);
+      font-size: 11px;
+    }
+
+    h3 { margin: 0 0 8px; font-size: 13px; }
+
+    .hover-divider {
+      height: 1px;
+      margin: 9px 0;
+      background: var(--line);
+    }
+
+    .hover-section-title {
+      margin: 0 0 7px;
+      color: var(--accent);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .07em;
+      text-transform: uppercase;
+    }
+
+    .hover-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 5px 0;
+      color: var(--muted);
+    }
+
+    .hover-row > span {
+      max-width: 205px;
+      line-height: 1.35;
+    }
+
+    .hover-row strong {
+      color: var(--text);
+      font-weight: 650;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .hover-class {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .hover-class i {
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+      background: #f4a261;
+    }
+
+    .citation-preview {
+      grid-column: 1 / -1;
+      width: 100%;
+      padding: 22px;
+      border-radius: 16px;
+      background: rgba(244, 247, 250, .96);
+      border: 1px solid #c8d2df;
+      border-left: 6px solid #7a8492;
+      box-shadow: 0 22px 60px rgba(0, 0, 0, .35);
+      color: #354052;
+    }
+
+    .citation-preview h2 {
+      margin: 0 0 16px;
+      color: #1f2937;
+      font-size: 18px;
+    }
+
+    .citation-preview h3 {
+      margin: 0 0 12px;
+      color: #2d3748;
+      font-size: 15px;
+    }
+
+    .citation-preview strong {
+      display: block;
+      margin-bottom: 9px;
+      color: #2d3748;
+      font-size: 14px;
+    }
+
+    .citation-preview p {
+      margin: 0;
+      color: #687281;
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    .citation-item + .citation-item {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid #c8d2df;
+    }
+
+    @media (max-width: 760px) {
+      .preview-stage {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 30px;
+        padding-top: 36px;
+      }
+
+      .control-panel,
+      .hover-card { width: min(100%, 320px); }
+    }
+  </style>
+</head>
+<body>
+  <p class="preview-label">Hover pop-up preview</p>
+
+  <main class="preview-stage">
+    <aside class="control-panel" aria-label="Left control-panel preview">
+      <p class="panel-caption">Left panel</p>
+      <section class="legend-block" aria-label="Unit land-value color scale">
+        <div class="legend-title">MEDIAN UNIT LAND VALUE <span>R$/m²</span></div>
+        <div class="value-gradient"></div>
+        <div class="gradient-labels">
+          <span>R$ 125/m²</span>
+          <span>R$ 680/m²</span>
+          <span>R$ 2,4 mil/m²</span>
+        </div>
+      </section>
+    </aside>
+
+    <aside class="hover-card" aria-label="Patch information preview">
+      <h3>Londrina</h3>
+      <div class="hover-divider"></div>
+
+      <div class="hover-section-title">Urban Land Cover</div>
+      <div class="hover-row">
+        <span>Land cover category:</span>
+        <strong class="hover-class"><i></i>Residential</strong>
+      </div>
+      <div class="hover-row">
+        <span>Land cover category classification confidence:</span>
+        <strong>94.7%</strong>
+      </div>
+
+      <div class="hover-divider"></div>
+
+      <div class="hover-section-title">Urban Land Value</div>
+      <div class="hover-row"><span>10th percentile:</span><strong>R$ 486,20/m²</strong></div>
+      <div class="hover-row"><span>50th percentile:</span><strong>R$ 642,75/m²</strong></div>
+      <div class="hover-row"><span>90th percentile:</span><strong>R$ 831,40/m²</strong></div>
+      <div class="hover-row">
+        <span>Land value prediction normalised interval:</span>
+        <strong>0.3146</strong>
+      </div>
+    </aside>
+
+    <section class="citation-preview" aria-label="Publication citations preview">
+      <h2>Cite as</h2>
+      <div class="citation-item">
+        <h3>DINOv2 ViT-L/14 + LoRA</h3>
+        <strong>Cite as:</strong>
+        <p>
+          Costa, F. J. da, &amp; Urbano, M. R. (2026). Efficient specialization of
+          foundation vision models for urban land cover classification.
+          <em><a href="https://www.sciencedirect.com/journal/artificial-intelligence-in-geosciences"
+          target="_blank" rel="noopener">Artificial Intelligence in Geosciences</a></em>,
+          7(2), 100225. <a href="https://doi.org/10.1016/j.aiig.2026.100225"
+          target="_blank" rel="noopener">https://doi.org/10.1016/j.aiig.2026.100225</a>
+        </p>
+      </div>
+
+      <div class="citation-item">
+        <h3>TabPFN v2 — Urban Land Value Estimation</h3>
+        <strong>Preliminary citation:</strong>
+        <p>
+          Costa, F. J. da, Urbano, M. R., &amp; Pescim, R. R. (in press).
+          Foundation model with agnostic locational features for urban land valuation.
+          <em><a href="https://www.tandfonline.com/journals/rsea20" target="_blank"
+          rel="noopener">Spatial Economic Analysis</a></em>.
+          Accepted for publication on 7 October 2026; currently awaiting production
+          (manuscript RSEA-2026-0140.R1). DOI pending assignment by Taylor &amp; Francis
+          and will be added here when available.
+        </p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
