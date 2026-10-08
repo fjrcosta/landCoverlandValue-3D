@@ -394,6 +394,11 @@ function addMunicipalEconomicsMapLayer() {
 
 function updateMunicipalEconomicsMapLayer() {
   if (!state.map?.getLayer(ECONOMICS_FILL_LAYER_ID)) return;
+  const municipalityFilter = state.selectedCity === 'all'
+    ? null
+    : ['==', ['get', 'slug'], state.selectedCity];
+  state.map.setFilter(ECONOMICS_FILL_LAYER_ID, municipalityFilter);
+  state.map.setFilter(ECONOMICS_LINE_LAYER_ID, municipalityFilter);
   const economicsVisibility = state.economicsMetric ? 'visible' : 'none';
   const outlineVisibility = state.economicsMetric || state.showUrbanPerimeters ? 'visible' : 'none';
   state.map.setLayoutProperty(ECONOMICS_FILL_LAYER_ID, 'visibility', economicsVisibility);
@@ -956,6 +961,7 @@ function wireEvents() {
   dom.citySelect.addEventListener('change', () => {
     state.selectedCity = dom.citySelect.value;
     stopTour();
+    updateScene();
     loadSelection();
     if (state.selectedCity === 'all') resetRegionalView();
     else flyToCity(state.selectedCity);
