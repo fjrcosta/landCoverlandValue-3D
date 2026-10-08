@@ -121,10 +121,17 @@ def make_city(slug: str, cfg: tuple) -> dict:
             x = x0 + ix * GRID_SIZE_M
             y = y0 + iy * GRID_SIZE_M
             lon, lat = UTM_TO_WGS.transform(x, y)
+            half = GRID_SIZE_M / 2
+            polygon = [
+                list(UTM_TO_WGS.transform(x - half, y + half)),
+                list(UTM_TO_WGS.transform(x + half, y + half)),
+                list(UTM_TO_WGS.transform(x + half, y - half)),
+                list(UTM_TO_WGS.transform(x - half, y - half)),
+            ]
             # Compact tuple: longitude, latitude, value R$/m², class index,
             # confidence, join distance m, normalized pointwise interval width,
-            # lower and upper predictive quantiles in R$/m²
-            records.append([round(lon, 6), round(lat, 6), round(price, 2), CLASS_INDEX[klass], round(confidence, 4), 0.0, round(pointwise_width, 6), round(q10, 2), round(q90, 2)])
+            # lower/upper predictive quantiles and exact four-vertex polygon
+            records.append([round(lon, 6), round(lat, 6), round(price, 2), CLASS_INDEX[klass], round(confidence, 4), 0.0, round(pointwise_width, 6), round(q10, 2), round(q90, 2), polygon])
             prices.append(price)
             confidences.append(confidence)
             counts[klass] += 1
@@ -145,7 +152,8 @@ def make_city(slug: str, cfg: tuple) -> dict:
         "classCounts": counts,
     }
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
+        "geometryEncoding": "cell[9] = exact [lon,lat] patch vertices in TL,TR,BR,BL order",
         "source": "synthetic-demonstration",
         "slug": slug,
         "name": name,
@@ -181,7 +189,8 @@ def main() -> None:
             total_counts[key] += value
 
     manifest = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
+        "geometryEncoding": "Exact four-vertex patch polygons",
         "title": "Northern Paraná Urban Twin",
         "datasetMode": "demo",
         "warning": "Synthetic demonstration data. Replace with model-output data before scientific interpretation.",

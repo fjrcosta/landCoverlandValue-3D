@@ -155,6 +155,22 @@ def land_cover_centres(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return mean_coords[:, 0], mean_coords[:, 1]
 
 
+def land_cover_polygons(frame: pd.DataFrame) -> list[list[list[float]]]:
+    """Return exact WGS84 vertices in TL, TR, BR, BL order."""
+    corners = ["top_left", "top_right", "bottom_right", "bottom_left"]
+    missing = [col for col in corners if col not in frame.columns]
+    if missing:
+        raise ValueError(f"Exact patch rendering requires all four corners; missing {missing}")
+    polygons = []
+    for _, row in frame.iterrows():
+        polygon = []
+        for column in corners:
+            lat, lon = parse_latlon(row[column])
+            polygon.append([lon, lat])
+        polygons.append(polygon)
+    return polygons
+
+
 def find_city_files(directory: Path, pattern: str = "*.csv") -> dict[str, Path]:
     result: dict[str, Path] = {}
     for path in sorted(directory.rglob(pattern)):
@@ -243,6 +259,7 @@ def build_city(
         raise ValueError(f"Unknown land-cover classes in {cover_path.name}: {unknown}")
 
     cover_lon, cover_lat = land_cover_centres(cover)
+    cover_polygons = land_cover_polygons(cover)
     cover_x, cover_y = wgs_to_metric.transform(cover_lon, cover_lat)
     tree = cKDTree(np.column_stack([cover_x, cover_y]))
 
@@ -280,14 +297,25 @@ def build_city(
     pointwise_width = pointwise_width[finite_price]
     classes, confidence, distance = classes[finite_price], confidence[finite_price], distance[finite_price]
 
+    nearest = nearest[finite_price]
     records = [
         [round(float(lo), 6), round(float(la), 6), round(float(pr), 2),
          CLASS_INDEX[cl], round(float(cf), 4), round(float(di), 2),
-         round(float(pw), 6), round(float(q10), 2), round(float(q90), 2)]
-        for lo, la, pr, cl, cf, di, pw, q10, q90 in zip(
+         round(float(pw), 6), round(float(q10), 2), round(float(q90), 2), polygon]
+        for lo, la, pr, cl, cf, di, pw, q10, q90, polygon in zip(
             lon, lat, prices, classes, confidence, distance, pointwise_width,
-            lower_values, upper_values
+            lower_values, upper_values, (cover_polygons[index] for index in nearest)
         )
+    ]
+    grouped: dict[tuple[float, float], list[list]] = {}
+    for record in records:
+        grouped.setdefault((record[0], record[1]), []).append(record)
+    records = [
+        [group[0][0], group[0][1], round(float(np.median([r[2] for r in group])), 2), group[0][3],
+         round(float(np.median([r[4] for r in group])), 4), round(float(np.median([r[5] for r in group])), 2),
+         round(float(np.median([r[6] for r in group])), 6), round(float(np.median([r[7] for r in group])), 2),
+         round(float(np.median([r[8] for r in group])), 2), group[0][9]]
+        for group in grouped.values()
     ]
     if not records:
         raise ValueError(f"No valid value records in {value_path.name}")
@@ -299,7 +327,8 @@ def build_city(
     lons = [r[0] for r in records]
     lats = [r[1] for r in records]
     return {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
+        "geometryEncoding": "cell[9] = exact [lon,lat] patch vertices in TL,TR,BR,BL order",
         "source": "model-output",
         "slug": slug,
         "name": CITY_NAMES[slug],
@@ -380,7 +409,8 @@ def main() -> None:
 
     prices = np.asarray(all_prices, dtype=float)
     manifest = {
-        "schemaVersion": 3,
+        "schemaVersion": 4,
+        "geometryEncoding": "Exact four-vertex patch polygons; duplicate centres merged by median prediction",
         "title": "Northern Paraná Urban Twin",
         "datasetMode": "model-output",
         "warning": "Model-output visualization. Interpret values according to the validation, uncertainty and reference-parcel assumptions documented in the associated research.",

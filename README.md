@@ -35,7 +35,7 @@ DINOv2–LoRA CSVs ──┐
                     ├─ scripts/build_data.py ── nearest spatial association ── compact city JSON
 TabPFN CSVs ────────┘
 
-compact city JSON ── browser fetch ── deck.gl GridCellLayer ── MapLibre 3D scene
+compact city JSON with exact patch vertices ── browser fetch ── deck.gl SolidPolygonLayer ── MapLibre 3D scene
 OSM Folium HTML ── scripts/build_transport_data.py ── compact city roads ── deck.gl PathLayer
 ```
 

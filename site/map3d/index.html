@@ -241,7 +241,7 @@
         <div><strong>Urban transportation network</strong><span>OpenStreetMap drive network classified as motorway, trunk, primary, secondary and residential; duplicate directed geometries are removed for rendering.</span></div>
         <div><strong>Municipal land economics</strong><span>LUD relates GVA:CS+I to developed urban extent; LVY is a territorial economic-output proxy relative to estimated aggregate developed-land value, not a financial return rate.</span></div>
         <div><strong>Spatial integration</strong><span>Nearest-neighbour association in a projected metric CRS, performed offline by the preprocessing script.</span></div>
-        <div><strong>Rendering</strong><span>MapLibre GL JS with selectable OpenFreeMap or Esri World Imagery basemaps and deck.gl GPU grid-cell extrusion. Static hosting; no application server is required.</span></div>
+        <div><strong>Rendering</strong><span>MapLibre GL JS with selectable OpenFreeMap or Esri World Imagery basemaps and deck.gl GPU extrusion of the exact four-vertex patch polygons. Static hosting; no application server is required.</span></div>
       </div>
       <section class="publication-notes" aria-labelledby="publicationsTitle">
         <h3 id="publicationsTitle">Publications and datasets</h3>
@@ -283,6 +283,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20261008-15"></script>
+  <script type="module" src="./assets/app.js?v=20261008-16"></script>
 </body>
 </html>

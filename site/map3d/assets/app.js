@@ -191,7 +191,7 @@ function classLabel(cellOrKey) {
 }
 
 function cityNameFromCell(cell) {
-  return state.manifest.cities[cell[9]]?.name || 'Unknown municipality';
+  return state.manifest.cities[cell[10]]?.name || 'Unknown municipality';
 }
 
 function roadClassMeta(road) {
@@ -265,7 +265,7 @@ async function loadCity(cityMeta, cityIndex) {
     const promise = fetchJson(`./${cityMeta.file}`).then(city => {
       city.cells.forEach(cell => {
         // Append city index once so compact source files remain reusable.
-        if (cell.length < 10) cell.push(cityIndex);
+        if (cell.length < 11) cell.push(cityIndex);
       });
       return city;
     });
@@ -430,7 +430,6 @@ function updateScene() {
   updateMunicipalEconomicsMapLayer();
   const data = filteredCells();
   const roadData = filteredRoads();
-  const gridSize = state.manifest.gridSizeM || 109.45;
   const showGrid = (
     state.activeDimensions.has('cover') && state.coverTint > 0
   ) || (
@@ -451,16 +450,14 @@ function updateScene() {
   });
   const lightingEffect = new deck.LightingEffect({ ambientLight, directionalLight });
 
-  const gridLayer = showGrid ? new deck.GridCellLayer({
-    id: `urban-grid-${dimensionsKey}-${state.heightScale}-${state.valueTint}-${state.coverTint}-${state.selectedClasses.size}`,
+  const gridLayer = showGrid ? new deck.SolidPolygonLayer({
+    id: `urban-patches-${dimensionsKey}-${state.heightScale}-${state.valueTint}-${state.coverTint}-${state.selectedClasses.size}`,
     data,
     pickable: true,
     extruded: true,
     wireframe: false,
-    cellSize: gridSize * 0.94,
-    coverage: 0.96,
     opacity: 1,
-    getPosition: d => [d[0], d[1]],
+    getPolygon: d => d[9],
     getElevation: elevationForCell,
     getFillColor: colorForCell,
     material: {

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 
@@ -44,8 +45,8 @@ def main() -> None:
         fail("index.html still contains exclusive analytical-mode buttons")
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    if manifest.get("schemaVersion") != 3:
-        fail("Manifest does not use schema version 3")
+    if manifest.get("schemaVersion") != 4:
+        fail("Manifest does not use schema version 4")
     if manifest.get("datasetMode") == "model-output":
         if manifest.get("modelConfiguration") != 60:
             fail("Model-output manifest does not identify configuration 60")
@@ -68,20 +69,25 @@ def main() -> None:
         if not city_path.exists():
             fail(f"Missing city data file {meta['file']}")
         city = json.loads(city_path.read_text(encoding="utf-8"))
-        if city.get("schemaVersion") != 3:
-            fail(f"{meta['file']} does not use schema version 3")
+        if city.get("schemaVersion") != 4:
+            fail(f"{meta['file']} does not use schema version 4")
         if city.get("slug") != meta.get("slug"):
             fail(f"City slug mismatch in {meta['file']}")
         cells = city.get("cells", [])
         if not cells:
             fail(f"No cells in {meta['file']}")
+        seen_centres = set()
         for i, cell in enumerate(cells):
-            if len(cell) != 9:
-                fail(f"{meta['file']} cell {i} has {len(cell)} fields, expected 9")
+            if len(cell) != 10:
+                fail(f"{meta['file']} cell {i} has {len(cell)} fields, expected 10")
             (lon, lat, price, class_index, confidence, distance,
-             pointwise_width, q10, q90) = cell
+             pointwise_width, q10, q90, polygon) = cell
             if not (-180 <= lon <= 180 and -90 <= lat <= 90):
                 fail(f"Invalid coordinate in {meta['file']} cell {i}")
+            centre_key = (lon, lat)
+            if centre_key in seen_centres:
+                fail(f"Duplicate patch centre in {meta['file']} cell {i}")
+            seen_centres.add(centre_key)
             if not (price > 0):
                 fail(f"Non-positive price in {meta['file']} cell {i}")
             if not (0 <= class_index < len(classes)):
@@ -94,6 +100,17 @@ def main() -> None:
                 fail(f"Negative pointwise normalized interval width in {meta['file']} cell {i}")
             if not (0 < q10 <= price <= q90):
                 fail(f"Invalid predictive-quantile ordering in {meta['file']} cell {i}")
+            if len(polygon) != 4:
+                fail(f"{meta['file']} cell {i} does not contain four patch vertices")
+            for vertex_lon, vertex_lat in polygon:
+                if not (-180 <= vertex_lon <= 180 and -90 <= vertex_lat <= 90):
+                    fail(f"Invalid patch vertex in {meta['file']} cell {i}")
+            mean_lon = sum(vertex[0] for vertex in polygon) / 4
+            mean_lat = sum(vertex[1] for vertex in polygon) / 4
+            dy = math.radians(mean_lat - lat) * 6_371_008.8
+            dx = math.radians(mean_lon - lon) * 6_371_008.8 * math.cos(math.radians((mean_lat + lat) / 2))
+            if math.hypot(dx, dy) > 0.2:
+                fail(f"Patch polygon is not centred on its record in {meta['file']} cell {i}")
         if meta.get("stats", {}).get("cells") != len(cells):
             fail(f"Cell count mismatch in manifest for {meta['slug']}")
         total += len(cells)
