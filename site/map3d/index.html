@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://services.arcgisonline.com" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="./assets/styles.css?v=20261008-14" />
+  <link rel="stylesheet" href="./assets/styles.css?v=20261009-15" />
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -26,7 +26,7 @@
         </div>
       </div>
       <div class="topbar-actions">
-        <span id="datasetBadge" class="badge badge-warning">Loading</span>
+        <span id="datasetBadge" class="badge badge-warning" hidden>Loading</span>
         <label class="basemap-control" for="basemapSelect">
           <span>Basemap</span>
           <select id="basemapSelect" aria-label="Basemap">
@@ -55,15 +55,15 @@
           <div class="section-heading"><span>Analytical dimensions</span></div>
           <div class="analytical-modes" role="group" aria-label="Analytical dimensions">
             <label class="dimension-option">
-              <input id="coverDimension" type="checkbox" checked />
+              <input id="coverDimension" type="checkbox" />
               <span><strong>Land cover</strong><small>DINOv2–LoRA</small></span>
             </label>
             <label class="dimension-option">
-              <input id="valueDimension" type="checkbox" checked />
+              <input id="valueDimension" type="checkbox" />
               <span><strong>Land value</strong><small>TabPFN v2</small></span>
             </label>
             <label class="dimension-option">
-              <input id="transportDimension" type="checkbox" checked />
+              <input id="transportDimension" type="checkbox" />
               <span><strong>Transport network</strong><small>OpenStreetMap</small></span>
             </label>
             <label class="dimension-option dimension-option--economics">
@@ -95,24 +95,24 @@
         <section class="panel-section" id="tintSection">
           <div class="range-header">
             <label for="valueTint">Land value tint</label>
-            <output id="valueTintOutput">22%</output>
+            <output id="valueTintOutput">30%</output>
           </div>
-          <input id="valueTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.22" />
+          <input id="valueTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.30" />
           <div class="range-header tint-range-header">
             <label for="coverTint">Land cover tint</label>
-            <output id="coverTintOutput">78%</output>
+            <output id="coverTintOutput">30%</output>
           </div>
-          <input id="coverTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.78" />
+          <input id="coverTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.30" />
           <div class="range-header tint-range-header">
             <label for="transportTint">Transport tint</label>
-            <output id="transportTintOutput">96%</output>
+            <output id="transportTintOutput">30%</output>
           </div>
-          <input id="transportTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.96" />
+          <input id="transportTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.30" />
           <div class="range-header tint-range-header">
             <label for="economicsTint">Economics tint</label>
-            <output id="economicsTintOutput">94%</output>
+            <output id="economicsTintOutput">30%</output>
           </div>
-          <input id="economicsTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.94" disabled />
+          <input id="economicsTint" class="range-control" type="range" min="0" max="1" step="0.01" value="0.30" disabled />
           <p class="microcopy">Tint controls each selected dimension's visual contribution. Value vertical extrusion is controlled separately.</p>
         </section>
 
@@ -135,19 +135,19 @@
         <section class="panel-section">
           <div class="section-heading"><span>Scene</span></div>
           <label class="toggle-row">
-            <input id="buildingsToggle" type="checkbox" checked />
+            <input id="buildingsToggle" type="checkbox" />
             <span class="toggle-ui"></span>
             <span><strong>3D buildings</strong><small>OpenStreetMap-derived basemap geometry</small></span>
           </label>
           <label class="toggle-row">
-            <input id="perimeterToggle" type="checkbox" />
+            <input id="perimeterToggle" type="checkbox" checked />
             <span class="toggle-ui"></span>
             <span><strong>Urban perimeter outlines</strong><small>Municipal urban-boundary GeoJSONs</small></span>
           </label>
         </section>
 
         <section class="panel-section panel-actions">
-          <button id="downloadButton" class="button button-primary" type="button">↓ Export visible data</button>
+          <button id="downloadButton" class="button button-primary" type="button" hidden>↓ Export visible data</button>
           <button id="aboutButton" class="button button-secondary" type="button">Method & data</button>
         </section>
       </div>
@@ -283,6 +283,6 @@
 
   <script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
   <script src="https://unpkg.com/deck.gl@9.2.0/dist.min.js"></script>
-  <script type="module" src="./assets/app.js?v=20261008-18"></script>
+  <script type="module" src="./assets/app.js?v=20261009-7"></script>
 </body>
 </html>

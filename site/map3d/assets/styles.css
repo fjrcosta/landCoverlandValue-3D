@@ -139,7 +139,7 @@ button { color: inherit; }
 .toggle-row input:focus-visible + .toggle-ui { outline: 2px solid var(--accent); outline-offset: 3px; }
 .toggle-row strong { display: block; font-size: 11px; }
 .toggle-row small { display: block; color: var(--muted); font-size: 9px; margin-top: 2px; }
-.panel-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.panel-actions { display: grid; grid-template-columns: 1fr; gap: 8px; }
 
 .insight-panel {
   position: absolute;
