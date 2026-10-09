@@ -71,6 +71,7 @@ const state = {
   tourIndex: 0,
   overlay: null,
   map: null,
+  coordinateMarker: null,
   buildingLayerId: null,
   hoverObject: null
 };
@@ -610,15 +611,13 @@ function pinHoverCard(info) {
   renderHoverCard(info, true);
 }
 
-function renderHoverCard(info, pinned = false) {
-  const cell = info.object;
+function analyticalCellDetailsHtml(cell) {
   const key = classKey(cell);
   const confidence = cell[4];
   const pointwiseWidth = cell[6];
   const q10 = cell[7];
   const q90 = cell[8];
-  dom.hoverCard.classList.add('hover-card--analytical');
-  dom.hoverCard.innerHTML = `
+  return `
     <h3>${cityNameFromCell(cell)}</h3>
     <div class="hover-divider"></div>
     <div class="hover-section-title">Urban Land Cover</div>
@@ -630,6 +629,14 @@ function renderHoverCard(info, pinned = false) {
     <div class="hover-row"><span>50th percentile:</span><strong>${formatCurrency(cell[2])}</strong></div>
     <div class="hover-row"><span>90th percentile:</span><strong>${formatCurrency(q90)}</strong></div>
     <div class="hover-row"><span>Land value prediction normalised interval:</span><strong>${pointwiseWidth.toFixed(4)}</strong></div>
+  `;
+}
+
+function renderHoverCard(info, pinned = false) {
+  const cell = info.object;
+  dom.hoverCard.classList.add('hover-card--analytical');
+  dom.hoverCard.innerHTML = `
+    ${analyticalCellDetailsHtml(cell)}
     ${pinned ? '<div class="hover-row"><span>Selection</span><strong>pinned</strong></div>' : ''}
   `;
   dom.hoverCard.hidden = false;
@@ -1036,6 +1043,48 @@ function updatePanelsVisibility() {
   updateCompactLegend();
 }
 
+function cellAtCoordinate(longitude, latitude) {
+  const cells = state.regionalCells.length ? state.regionalCells : state.currentCells;
+  for (const cell of cells) {
+    const polygon = cell[9];
+    if (!Array.isArray(polygon) || polygon.length < 3) continue;
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+      const intersects = ((yi > latitude) !== (yj > latitude))
+        && (longitude < (xj - xi) * (latitude - yi) / (yj - yi) + xi);
+      if (intersects) inside = !inside;
+    }
+    if (inside) return cell;
+  }
+  return null;
+}
+
+function locateCoordinates(latitude, longitude) {
+  const coordinates = [longitude, latitude];
+  const cell = cellAtCoordinate(longitude, latitude);
+  const details = cell
+    ? analyticalCellDetailsHtml(cell)
+    : '<h3>Selected coordinates</h3><div class="hover-divider"></div><p>No urban patch is available at this location.</p>';
+  const popup = new maplibregl.Popup({ offset: 24, maxWidth: '340px' }).setHTML(`
+    <div class="marker-analytical-popup">
+      ${details}
+      <div class="hover-divider"></div>
+      <div class="hover-row"><span>Latitude:</span><strong>${latitude.toFixed(6)}</strong></div>
+      <div class="hover-row"><span>Longitude:</span><strong>${longitude.toFixed(6)}</strong></div>
+    </div>
+  `);
+  if (state.coordinateMarker) state.coordinateMarker.remove();
+  state.coordinateMarker = new maplibregl.Marker({ color: '#f97316' })
+    .setLngLat(coordinates)
+    .setPopup(popup)
+    .addTo(state.map);
+  state.map.stop();
+  state.map.flyTo({ center: coordinates, zoom: 16, pitch: 45, bearing: 0, essential: true });
+  state.coordinateMarker.togglePopup();
+}
+
 function wireEvents() {
   dom.citySelect.addEventListener('change', () => {
     state.selectedCity = dom.citySelect.value;
@@ -1126,6 +1175,10 @@ function wireEvents() {
 
   dom.resetButton.addEventListener('click', () => {
     stopTour();
+    if (state.coordinateMarker) {
+      state.coordinateMarker.remove();
+      state.coordinateMarker = null;
+    }
     dom.citySelect.value = 'all';
     state.selectedCity = 'all';
     loadSelection();
@@ -1391,6 +1444,10 @@ function initMap() {
     state.map.addControl(new maplibregl.FullscreenControl(), 'bottom-left');
     state.map.addControl(new maplibregl.ScaleControl({ maxWidth: 130, unit: 'metric' }), 'bottom-left');
     state.map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-right');
+    state.map.on('click', event => {
+      const { lat, lng } = event.lngLat;
+      locateCoordinates(lat, lng);
+    });
 
     state.map.once('load', () => {
       state.overlay = new deck.MapboxOverlay({ interleaved: true, layers: [] });

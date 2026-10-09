@@ -245,6 +245,9 @@ button { color: inherit; }
 
 .hover-card { position: fixed; z-index: 30; width: 230px; pointer-events: none; border-radius: 12px; padding: 11px 12px; font-size: 11px; }
 .hover-card h3 { margin: 0 0 8px; font-size: 13px; }
+.marker-analytical-popup { width: 300px; max-width: calc(100vw - 70px); font-size: 11px; }
+.marker-analytical-popup h3 { margin: 0 0 8px; color: var(--text); font-size: 13px; }
+.marker-analytical-popup p { margin: 8px 0; color: var(--muted); line-height: 1.4; }
 .hover-card--analytical { width: 320px; max-width: calc(100vw - 28px); }
 .hover-divider { height: 1px; margin: 9px 0; background: var(--line); }
 .hover-section-title { margin: 0 0 7px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
