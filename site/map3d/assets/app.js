@@ -642,6 +642,58 @@ function renderHoverCard(info, pinned = false) {
   dom.hoverCard.style.top = `${y}px`;
 }
 
+function configureStatisticsTable(showCover, showValue) {
+  const table = dom.classStatisticsBody.closest('table');
+  const colgroup = table.querySelector('colgroup');
+  const head = table.querySelector('thead');
+  if (showCover && showValue) {
+    table.dataset.statisticsMode = 'combined';
+    table.setAttribute('aria-label', 'Extent, municipal and regional shares, and land-value distribution by selected land-cover category');
+    colgroup.innerHTML = `
+      <col style="width:20%"><col style="width:13%"><col style="width:14%"><col style="width:14%">
+      <col style="width:7.8%"><col style="width:7.8%"><col style="width:7.8%"><col style="width:7.8%"><col style="width:7.8%">
+    `;
+    head.innerHTML = `
+      <tr class="statistics-main-heading">
+        <th rowspan="2">Selected Land-Cover Categories</th><th rowspan="2">Extent</th>
+        <th rowspan="2" title="Share of the municipality occupied by the category"><span class="stacked-heading">Municipal<br>share</span></th>
+        <th rowspan="2" title="Municipality's share of the category's total regional extent"><span class="stacked-heading">Regional<br>share</span></th>
+        <th colspan="5" class="percentiles-heading">Land-value distribution <span>R$/m²</span></th>
+      </tr>
+      <tr class="statistics-subheading"><th>Min.</th><th>10th</th><th>50th</th><th>90th</th><th>Max.</th></tr>
+    `;
+    return;
+  }
+  if (showCover) {
+    table.dataset.statisticsMode = 'cover';
+    table.setAttribute('aria-label', 'Extent and municipal and regional shares by selected land-cover category');
+    colgroup.innerHTML = `
+      <col style="width:38%"><col style="width:20%"><col style="width:21%"><col style="width:21%">
+    `;
+    head.innerHTML = `
+      <tr class="statistics-main-heading statistics-single-heading">
+        <th>Selected Land-Cover Categories</th><th>Extent</th>
+        <th title="Share of the municipality occupied by the category"><span class="stacked-heading">Municipal<br>share</span></th>
+        <th title="Municipality's share of the category's total regional extent"><span class="stacked-heading">Regional<br>share</span></th>
+      </tr>
+    `;
+    return;
+  }
+  table.dataset.statisticsMode = 'value';
+  table.setAttribute('aria-label', 'Land-value minimum, percentiles and maximum for the selected municipality and all municipalities');
+  colgroup.innerHTML = `
+    <col style="width:30%"><col style="width:14%"><col style="width:14%">
+    <col style="width:14%"><col style="width:14%"><col style="width:14%">
+  `;
+  head.innerHTML = `
+    <tr class="statistics-main-heading">
+      <th rowspan="2">Geographic scope</th>
+      <th colspan="5" class="percentiles-heading">Land-value distribution <span>R$/m²</span></th>
+    </tr>
+    <tr class="statistics-subheading"><th>Min.</th><th>10th</th><th>50th</th><th>90th</th><th>Max.</th></tr>
+  `;
+}
+
 function updateStatistics() {
   if (state.economicsMetric) {
     dom.insightPanel.style.display = '';
@@ -655,15 +707,20 @@ function updateStatistics() {
   const showCellStatistics = state.activeDimensions.has('cover') || state.activeDimensions.has('value');
   dom.insightPanel.style.display = showCellStatistics ? '' : 'none';
   if (!showCellStatistics) return;
-  const selectedItems = state.manifest.classes.filter(item => state.selectedClasses.has(item.key));
+  const showCover = state.activeDimensions.has('cover');
+  const showValue = state.activeDimensions.has('value');
+  configureStatisticsTable(showCover, showValue);
+  const selectedItems = showCover
+    ? state.manifest.classes.filter(item => state.selectedClasses.has(item.key))
+    : [];
   const municipalityTotal = state.currentCells.length;
   dom.classStatisticsBody.innerHTML = '';
   dom.classStatisticsTotal.innerHTML = '';
 
-  if (!selectedItems.length) {
+  if (showCover && !selectedItems.length) {
     const empty = document.createElement('tr');
     empty.className = 'class-statistics-empty';
-    empty.innerHTML = '<td colspan="7">No land-cover category selected</td>';
+    empty.innerHTML = `<td colspan="${showValue ? 9 : 4}">No land-cover category selected</td>`;
     dom.classStatisticsBody.appendChild(empty);
     return;
   }
@@ -684,39 +741,63 @@ function updateStatistics() {
       <td class="secondary">${formatAreaCompact(count)}</td>
       <td class="secondary">${share.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
       <td class="secondary">${regionalShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+      ${showValue ? `<td>${formatLandValue(prices[0])}</td>
       <td>${formatLandValue(quantile(prices, 0.1))}</td>
       <td>${formatLandValue(quantile(prices, 0.5))}</td>
       <td>${formatLandValue(quantile(prices, 0.9))}</td>
+      <td>${formatLandValue(prices[prices.length - 1])}</td>` : ''}
     `;
     dom.classStatisticsBody.appendChild(row);
   });
 
+  if (!showCover) selectedCells.push(...state.currentCells);
+
   const totalPrices = selectedCells.map(cell => cell[2]).sort((a, b) => a - b);
   const totalShare = municipalityTotal ? selectedCells.length / municipalityTotal * 100 : 0;
-  const regionalSelectedCells = state.regionalCells.filter(cell => state.selectedClasses.has(classKey(cell)));
+  const regionalSelectedCells = showCover
+    ? state.regionalCells.filter(cell => state.selectedClasses.has(classKey(cell)))
+    : state.regionalCells;
   const regionalPrices = regionalSelectedCells.map(cell => cell[2]).sort((a, b) => a - b);
   const regionalCategoryShare = regionalSelectedCells.length ? selectedCells.length / regionalSelectedCells.length * 100 : 0;
   const totalRow = document.createElement('tr');
-  totalRow.innerHTML = `
+  totalRow.innerHTML = showCover ? `
     <td>${state.selectedCity === 'all' ? 'Visible<br>total' : 'Selected<br>municipality'}</td>
     <td>${formatAreaCompact(selectedCells.length)}</td>
     <td>${totalShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
     <td>${regionalCategoryShare.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%</td>
+    ${showValue ? `<td>${formatLandValue(totalPrices[0])}</td>
     <td>${formatLandValue(quantile(totalPrices, 0.1))}</td>
     <td>${formatLandValue(quantile(totalPrices, 0.5))}</td>
     <td>${formatLandValue(quantile(totalPrices, 0.9))}</td>
+    <td>${formatLandValue(totalPrices[totalPrices.length - 1])}</td>` : ''}
+  ` : `
+    <td>${state.selectedCity === 'all' ? 'All<br>municipalities' : 'Selected<br>municipality'}</td>
+    <td>${formatLandValue(totalPrices[0])}</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.1))}</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.5))}</td>
+    <td>${formatLandValue(quantile(totalPrices, 0.9))}</td>
+    <td>${formatLandValue(totalPrices[totalPrices.length - 1])}</td>
   `;
   if (state.selectedCity !== 'all') dom.classStatisticsTotal.appendChild(totalRow);
   const regionalRow = document.createElement('tr');
   regionalRow.className = 'regional-total-row';
-  regionalRow.innerHTML = `
+  regionalRow.innerHTML = showCover ? `
     <td>All<br>municipalities</td>
     <td>${formatAreaCompact(regionalSelectedCells.length)}</td>
     <td aria-label="Not applicable">—</td>
     <td aria-label="Not applicable">—</td>
+    ${showValue ? `<td>${formatLandValue(regionalPrices[0])}</td>
     <td>${formatLandValue(quantile(regionalPrices, 0.1))}</td>
     <td>${formatLandValue(quantile(regionalPrices, 0.5))}</td>
     <td>${formatLandValue(quantile(regionalPrices, 0.9))}</td>
+    <td>${formatLandValue(regionalPrices[regionalPrices.length - 1])}</td>` : ''}
+  ` : `
+    <td>All<br>municipalities</td>
+    <td>${formatLandValue(regionalPrices[0])}</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.1))}</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.5))}</td>
+    <td>${formatLandValue(quantile(regionalPrices, 0.9))}</td>
+    <td>${formatLandValue(regionalPrices[regionalPrices.length - 1])}</td>
   `;
   dom.classStatisticsTotal.appendChild(regionalRow);
 }
