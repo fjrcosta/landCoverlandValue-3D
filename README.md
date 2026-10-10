@@ -1,4 +1,4 @@
-# Northern Paraná Urban Twin
+# Deep Learning for Urban Land Cover& Urban Land Value Analysis
 
 An interactive analytical portal for the Londrina–Maringá urban system in Paraná, Brazil. It integrates urban land-cover classification, predicted unit land value, the urban transport network, and aggregated municipal land economics.
 
