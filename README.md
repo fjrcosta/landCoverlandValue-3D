@@ -1,120 +1,71 @@
 # Northern Paraná Urban Twin
 
-A GitHub Pages–ready 3D web application that combines three analytical dimensions:
+An interactive analytical portal for the Londrina–Maringá urban system in Paraná, Brazil. It integrates urban land-cover classification, predicted unit land value, the urban transport network, and aggregated municipal land economics.
 
-- **Urban land-cover classification:** DINOv2 ViT-L/14 + LoRA, ten mutually exclusive classes and classification confidence.
-- **Median unit urban land value:** TabPFN v2 configuration-60 predictions for a 450 m² reference parcel on a 109.45 m grid, displayed in R$/m².
-- **Urban transportation network:** OpenStreetMap drive-network geometry classified as motorway, trunk, primary, secondary and residential.
+**Live portal:** [fjcosta.github.io/fjcostaLandCoverLandValue](https://fjcosta.github.io/fjcostaLandCoverLandValue/)
 
-The three dimensions are independently selectable and can be freely combined:
+## Analytical content
 
-- prism **height** = predicted median unit land value;
-- prism **categorical color** = urban land-cover class;
-- continuous **value tint** = the notebook’s blue-to-red `tim.colors()`-like palette;
-- tooltip = city, class, confidence, predictive quantiles and normalized pointwise interval width.
-- road color and width = OpenStreetMap `highway` class.
+- **Urban land cover:** DINOv2 ViT-L/14 + LoRA classification for ten mutually exclusive classes, with classification confidence.
+- **Unit land value:** TabPFN v2 configuration 60 predictions for a 450 m² reference parcel, reported in R$/m² as the 10th, 50th and 90th percentiles.
+- **Transport network:** OpenStreetMap road geometry grouped into motorway, trunk, primary, secondary and residential classes.
+- **Municipal land economics:** municipal polygons coloured by:
+  - **LUD (2023/2024):** GVA CS+I per developed urban km² — US$ million/km².
+  - **LVY (2023/2024):** GVA CS+I divided by estimated aggregate developed land value — year⁻¹. LVY is a proxy for territorial economic output relative to developed land value, not a financial return rate or cap rate.
 
-The repository contains a deterministic synthetic demonstration dataset so the interface works immediately. It is clearly labelled **Demo data** in the application. Replace it with the model CSV outputs before scientific interpretation.
+Reference conditions are from 2024; municipal economic aggregates use GVA from 2023 and estimated developed land value from 2024, considering developed categories only.
 
-## Capabilities
+## Interface
 
-- GPU-accelerated rendering of the twelve-city grid with deck.gl.
-- MapLibre geographic camera with pitch, rotation, zoom and optional OpenStreetMap-derived 3D buildings.
-- Regional view and individual city views for Londrina, Cambé, Ibiporã, Rolândia, Arapongas, Apucarana, Cambira, Jandaia do Sul, Mandaguari, Marialva, Sarandi and Maringá.
-- Independent land-cover, land-value and transport-network analytical dimensions, allowing every overlay combination or a basemap-only scene.
-- Land-cover and road-class filtering, value vertical-extrusion control and separate value, cover and transport tint controls.
-- Dynamic statistics and land-cover composition for the visible selection.
-- Hover inspection, automatic twelve-city tour and CSV export of the filtered records.
-- Static hosting with no backend, database or API key.
-- Automated GitHub Pages deployment through GitHub Actions.
+The interface provides independent controls for Land Cover, Land Value, Transport Network, LUD and LVY; municipality, land-cover and road-class filters; regional and 12-municipality views; hover/click inspection of patch predictions; dynamic selected/all-municipality statistics; exact urban patch polygons; urban-perimeter outlines; optional 3D buildings; conventional and satellite basemaps; a municipality tour; and coordinate markers with analytical popups. The portal is static and requires no backend, database or API key.
 
-## Architecture
+LUD and LVY are mutually exclusive municipal-economics views. Selecting either economic layer switches the right-hand panel to the complete 12-municipality comparison; deselecting both returns to the general analytical panel.
+
+## Data representation and architecture
 
 ```text
 DINOv2–LoRA CSVs ──┐
-                    ├─ scripts/build_data.py ── nearest spatial association ── compact city JSON
+                    ├─ scripts/build_data.py ── spatial association ── city JSON
 TabPFN CSVs ────────┘
 
-compact city JSON with exact patch vertices ── browser fetch ── deck.gl SolidPolygonLayer ── MapLibre 3D scene
-OSM Folium HTML ── scripts/build_transport_data.py ── compact city roads ── deck.gl PathLayer
+city JSON with exact patch vertices ── deck.gl SolidPolygonLayer ── MapLibre scene
+OSM Folium HTML ── scripts/build_transport_data.py ── deck.gl PathLayer
+municipal economics GeoJSON ── MapLibre fill/outline layers
 ```
 
-The preprocessing step performs the computationally expensive spatial association once. The browser receives compact records of the form:
+Each patch is stored with its four geographic vertices rather than reconstructed from a regular grid:
 
 ```text
-[longitude, latitude, value_q50_R$/m², class_index, confidence, match_distance_m, normalized_pointwise_interval_width, value_q10_R$/m², value_q90_R$/m²]
+[longitude, latitude, value_q50_R$/m², class_index, confidence,
+ match_distance_m, normalized_pointwise_interval_width,
+ value_q10_R$/m², value_q90_R$/m², polygon]
 ```
 
-This avoids sending two full polygon collections and avoids performing approximately 73,000 × 73,000 spatial comparisons in the browser.
+`polygon` contains the exact four `[longitude, latitude]` vertices in top-left, top-right, bottom-right, bottom-left order. The current model-output manifest records schema version 4, EPSG:4326 web coordinates, source CRS EPSG:29192, a 109.45 m grid, data year 2024, configuration 60, a 450 m² reference parcel and 73,166 cells across 12 municipalities.
 
 ## Local preview
 
-No JavaScript build step is required.
+No JavaScript build step is required:
 
 ```bash
-cd landCoverlandValue-3D
-python -m http.server 8000 --directory site
+cd /Volumes/ssd_externo/northern-parana-urban-twin
+python3 -m http.server 8000 --directory site
 ```
 
-Open `http://localhost:8000`.
+Open [http://localhost:8000](http://localhost:8000). Opening the HTML directly with a `file://` URL can block JSON requests.
 
-Do not open `site/index.html` directly with a `file://` URL; browsers block the JSON fetches in that mode.
-
-## Replace the demonstration data with the actual model outputs
-
-### 1. Arrange the files
-
-Copy one urban-land-cover CSV and one urban-land-value CSV per city into these directories:
-
-```text
-raw/
-├── land_cover/
-│   ├── inference_results_londrina.csv
-│   ├── inference_results_cambe.csv
-│   └── ...
-└── land_value/
-    ├── inferencia_Londrina_cfg60_450m2.csv
-    ├── inferencia_Cambe_cfg60_450m2.csv
-    └── ...
-```
-
-The filenames may retain the longer timestamped names from the notebook. The script identifies the city from the path or filename.
-
-Land-cover files must contain:
-
-```text
-predicted_class
-prediction_confidence
-center
-```
-
-where `center` is formatted as `latitude,longitude`. Instead of `center`, the four fields `top_left`, `top_right`, `bottom_left` and `bottom_right` may be supplied.
-
-Land-value files must contain:
-
-```text
-utm_x
-utm_y
-unit_q10
-unit_q50
-unit_q90
-pinaw_pontual
-configuracao
-area_m2
-```
-
-### 2. Install the Python dependencies
+## Regenerating data products
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python3 -m venv .venv
+source .venv/bin/activate
 pip install -r scripts/requirements.txt
 ```
 
-### 3. Build the website data
+Build the land-cover/land-value association:
 
 ```bash
-python scripts/build_data.py \
+python3 scripts/build_data.py \
   --land-cover-dir raw/land_cover \
   --land-value-dir raw/land_value \
   --land-value-pattern 'inferencia_*_cfg60_450m2.csv' \
@@ -123,83 +74,55 @@ python scripts/build_data.py \
   --grid-size-m 109.45
 ```
 
-This overwrites `site/map3d/data/manifest.json` and the files under `site/map3d/data/cities/`. The application badge changes automatically from **Demo data** to **Model output**.
+Land-cover files must provide `predicted_class`, `prediction_confidence` and either `center` or patch-corner fields. Land-value files must provide `utm_x`, `utm_y`, `unit_q10`, `unit_q50`, `unit_q90`, `pinaw_pontual`, `configuracao` and `area_m2`. The converter checks configuration 60 and the 450 m² reference parcel.
 
-Build the transportation layer from the published OSM hierarchy map with:
+Enrich exact patch geometry, build transport data, generate economics and validate:
 
 ```bash
-python scripts/build_transport_data.py \
+python3 scripts/enrich_patch_geometry.py
+python3 scripts/build_transport_data.py \
   --source-html /path/to/LandCover_DINO_TransportStructure.html \
   --output-dir site/map3d/data/transport \
   --snapshot 2025-12-28
+python3 scripts/build_economics_data.py
+python3 scripts/validate_site.py
 ```
-
-The converter retains the five published road classes and removes duplicate
-directed geometries within each municipality.
-
-The converter validates that every land-value record uses configuration 60 and
-the 450 m² reference parcel. The `unit_q50` column is already expressed in
-R$/m² and is therefore used directly, without exponentiation.
-
-### Spatial association
-
-The land-cover patch centres are transformed from EPSG:4326 to a metric CRS. The TabPFN UTM points are transformed from EPSG:29192 to EPSG:4326 and then into the same metric CRS. A `scipy.spatial.cKDTree` nearest-neighbour query assigns one land-cover class to each land-value cell.
-
-The match distance is retained as an exported alignment diagnostic. The manifest also stores its median, 95th percentile and number of associations beyond the diagnostic threshold. Change the threshold with:
-
-```bash
---max-match-distance 250
-```
-
-The threshold is diagnostic: records are retained rather than silently discarded.
 
 ## Publish with GitHub Pages
 
-1. Create an empty GitHub repository.
-2. From this project directory, run:
+The repository is [github.com/fjcosta/fjcostaLandCoverLandValue](https://github.com/fjcosta/fjcostaLandCoverLandValue). `.github/workflows/deploy-pages.yml` publishes `site/` after pushes to `main`.
 
 ```bash
-git init
-git add .
-git commit -m "Initial 3D urban twin"
-git branch -M main
-git remote add origin https://github.com/fjrcosta/landCoverlandValue-3D.git
-git push -u origin main
-```
-
-3. In GitHub, open **Settings → Pages**.
-4. Under **Build and deployment**, select **GitHub Actions**.
-5. The included `.github/workflows/deploy-pages.yml` publishes the `site/` directory after every push to `main`.
-
-The public address will be:
-
-```text
-https://fjrcosta.github.io/landCoverlandValue-3D/
+git add README.md site scripts
+git commit -m "Update portal documentation"
+git push origin main
 ```
 
 ## Scientific interpretation
 
-This viewer is an analytical 3D representation, not a photogrammetric reconstruction or cadastral building model. The extrusion heights are deliberately exaggerated and represent the relative intensity of predicted land value, not physical elevation.
+This viewer is an exploratory analytical and communication instrument, not a cadastral, photogrammetric or building-height model. Prism extrusion is a visual encoding of predicted unit land value, not physical elevation. Unit values are model predictions for the 450 m² reference parcel; quantiles and normalized pointwise interval width describe predictive distributions and uncertainty, not observed transactions.
 
-The preprocessing pipeline uses the model-60 `unit_q50` estimates directly in R$/m². These estimates correspond to the 450 m² reference parcel used during inference.
-
-The nearest-centre association is appropriate when both products represent approximately commensurate regular patches. Before publication, inspect the recorded match-distance distribution and verify grid alignment, edge behaviour and CRS assumptions.
+Exact patch polygons preserve source geometry, while match distance documents the association between land-cover and land-value products. LUD and LVY summarize municipal conditions over developed urban areas. LVY is a territorial economic-output proxy, not a land rent, investment yield or capitalization rate. Visual associations should not be read as causal relationships or substitutes for parcel-specific appraisal.
 
 ## Main files
 
 ```text
-site/index.html                 Application shell
-site/map3d/assets/app.js              Map, GPU layers, interaction and statistics
-site/map3d/assets/styles.css          Responsive visual design
-site/map3d/data/manifest.json         Dataset metadata and city index
-site/map3d/data/cities/*.json         Compact per-city analytical records
-site/map3d/data/transport/             OSM transport manifest and city roads
-scripts/build_data.py           Actual CSV-to-web conversion
-scripts/build_transport_data.py OSM hierarchy extraction and deduplication
-scripts/generate_demo_data.py   Deterministic demonstration dataset
-.github/workflows/              GitHub Pages deployment
+site/index.html                         Portal landing page
+site/map3d/index.html                   Interactive map shell
+site/map3d/assets/app.js                Map layers, controls and statistics
+site/map3d/assets/styles.css            Responsive visual design
+site/map3d/data/manifest.json           Dataset metadata and city index
+site/map3d/data/cities/*.json           Exact patch-level analytical records
+site/map3d/data/transport/              OSM transport manifest and city roads
+site/map3d/data/economics/              Municipal LUD/LVY GeoJSON
+scripts/build_data.py                   CSV-to-web conversion
+scripts/enrich_patch_geometry.py        Exact patch-vertex enrichment
+scripts/build_transport_data.py         OSM hierarchy extraction
+scripts/build_economics_data.py         Municipal economics generation
+scripts/validate_site.py                Schema and geometry validation
+.github/workflows/deploy-pages.yml      GitHub Pages deployment
 ```
 
-## License
+## Licensing and attribution
 
-Application code: MIT License. Transportation-network data © OpenStreetMap contributors and available under ODbL. Model outputs, imagery and other research data retain their original licences.
+Application code is released under the MIT License. Transportation-network data are © OpenStreetMap contributors and used under the Open Database License (ODbL). Model outputs, imagery and other research data retain their original licences and attribution requirements.
