@@ -18,6 +18,8 @@
       --text: #2d2d2d;
       --body-text: #405468;
       --link: #0797c7;
+      --line: #d6e0e8;
+      --facts-background: #f6f9fb;
     }
 
     * {
@@ -185,13 +187,81 @@
 
     .facts {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0.65rem 1.5rem;
-      margin: 1.2rem 0;
+      grid-template-columns: 1fr;
+      gap: 0.9rem;
+      margin: 1.35rem 0;
+      padding: 1.3rem 1.4rem;
+      background: var(--facts-background);
+      border: 1px solid #e1e9f0;
+      border-left: 6px solid #2d3748;
+      border-radius: 0.85rem;
+      font-size: 0.97rem;
     }
 
     .facts p {
       margin: 0;
+    }
+
+    .map-section-divider {
+      border: 0;
+      border-top: 2px solid var(--line);
+      margin: 1.3rem 0;
+    }
+
+    .map-intro {
+      max-width: 52rem;
+      margin-bottom: 0;
+      font-size: 1.05rem;
+      line-height: 1.65;
+    }
+
+    .overview-box {
+      margin: 1.2rem 0;
+      padding: 1rem 1.2rem;
+      background: var(--facts-background);
+      border: 1px solid #e1e9f0;
+      border-left: 6px solid #2d3748;
+      border-radius: 0.85rem;
+    }
+
+    .overview-box .map-intro {
+      margin: 0;
+    }
+
+    .overview-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .municipality-list {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.35rem 1rem;
+      margin-top: 0.55rem;
+      font-size: 0.92em;
+    }
+
+    .land-cover-class-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.45rem 1.25rem;
+      margin-top: 0.55rem;
+      font-size: 0.92em;
+    }
+
+    .land-cover-class-list span {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .land-cover-class-list span::before {
+      content: "";
+      width: 0.78rem;
+      height: 0.78rem;
+      flex: 0 0 0.78rem;
+      border: 1px solid rgba(35, 47, 62, 0.28);
+      border-radius: 2px;
+      background: var(--class-color);
     }
 
     .reference {
@@ -243,7 +313,7 @@
 
     .cite-box.reserved {
       background: #f8f9fb;
-      border-left-color: #7a8492;
+      border-left-color: #2d3748;
     }
 
     .cite-box.reserved p {
@@ -290,6 +360,14 @@
       .facts {
         grid-template-columns: 1fr;
       }
+
+      .municipality-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .land-cover-class-list {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -323,21 +401,20 @@
     <section class="block">
       <h1>
         Deep Learning for Urban Land Cover<br />
-        &amp; Urban Land Valuation
+        &amp; Urban Land Value Analysis
       </h1>
-      <p><em>Three-Dimensional Thematic Map</em></p>
-      <p>Londrina–Maringá Urban System, Paraná, Brazil</p>
+      <div class="overview-box">
+        <p>
+          Integrated visualization of urban land-cover classification produced
+          with DINOv2 ViT-L/14 + LoRA, median unit land-value estimates produced
+          with TabPFN v2.
+        </p>
+        <p>Londrina–Maringá Urban System, Paraná, Brazil</p>
+      </div>
     </section>
 
     <section class="block" id="map3d">
-      <h2>Urban Land Cover, Unit Land Value, Transport and Municipal Land Economics</h2>
-      <h3>Interactive Analytical Map</h3>
-
-      <p>
-        Integrated visualization of urban land-cover classification produced
-        with DINOv2 ViT-L/14 + LoRA, median unit land-value estimates produced
-        with TabPFN v2, and the OpenStreetMap urban road hierarchy.
-      </p>
+      <h2>Urban Land Cover, Land Value, Transport and Municipal Economics</h2>
 
       <div class="map-preview">
         <img
@@ -346,24 +423,65 @@
         />
       </div>
 
-      <div class="facts">
-        <p><strong>Municipalities:</strong> 12</p>
-        <p><strong>Urban land-cover classes:</strong> 10</p>
-        <p><strong>Spatial resolution:</strong> 109.45 × 109.45 m</p>
-        <p><strong>Year:</strong> 2024</p>
-        <p><strong>Transport network:</strong> Motorway, trunk, primary, secondary and residential roads</p>
-        <p><strong>Transport source:</strong> <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">© OpenStreetMap contributors</a>, ODbL · snapshot 28 December 2025</p>
-        <p><strong>Land-value unit:</strong> R$/m²</p>
-        <p><strong>Reference parcel area:</strong> 450 m²</p>
-        <p><strong>Land-value specification:</strong> TabPFN configuration 60</p>
+      <h3>Interactive Analytical Map</h3>
+
+      <div class="overview-box">
+        <p class="map-intro">
+          Urban land value, land cover, the transport network, and municipal
+          economics can be selected and overlaid freely.
+        </p>
       </div>
 
-      <p>
-        Land value, land cover and the transport network can be selected and
-        overlaid freely. Prism height represents predicted unit land value,
-        cell color combines the selected analytical tints, and styled lines
-        represent the OpenStreetMap urban transportation hierarchy.
-      </p>
+      <hr class="map-section-divider" />
+
+      <h3>Technical Details</h3>
+
+      <div class="facts">
+        <div>
+          <p><strong>Municipalities:</strong></p>
+          <div class="municipality-list" aria-label="Municipalities covered by the portal">
+            <span>Apucarana</span>
+            <span>Arapongas</span>
+            <span>Cambé</span>
+            <span>Cambira</span>
+            <span>Ibiporã</span>
+            <span>Jandaia do Sul</span>
+            <span>Londrina</span>
+            <span>Mandaguari</span>
+            <span>Marialva</span>
+            <span>Maringá</span>
+            <span>Rolândia</span>
+            <span>Sarandi</span>
+          </div>
+        </div>
+        <p><strong>Year:</strong> 2024</p>
+        <div>
+          <p><strong>Urban land-cover classes:</strong></p>
+          <div class="land-cover-class-list" aria-label="Urban land-cover classes">
+            <span style="--class-color: #bf8040">Bare Soil</span>
+            <span style="--class-color: #009900">Shrubs/Scrubs</span>
+            <span style="--class-color: #ffdf99">Row Crops</span>
+            <span style="--class-color: #33ff33">Grass/Pasture</span>
+            <span style="--class-color: #69000d">Developed: High Density</span>
+            <span style="--class-color: #e93529">Developed: Industrial</span>
+            <span style="--class-color: #c7171c">Developed: Low Density</span>
+            <span style="--class-color: #a10e15">Developed: Medium Density</span>
+            <span style="--class-color: #003300">Perennial Trees</span>
+            <span style="--class-color: #0b9fd5">Perennial Water</span>
+          </div>
+        </div>
+        <p><strong>Urban land-value unit:</strong> R$/m²</p>
+        <p><strong>Land-Use Density (LUD):</strong> GVA CS+I per developed urban km² — US$ million/km² (2023/2024)</p>
+        <p><strong>Land Value Yield (LVY):</strong> GVA CS+I / estimated developed land value — year⁻¹ (2023/2024)</p>
+        <p>
+          <strong>Transport network:</strong> Motorway, trunk, primary,
+          secondary and residential roads. Source:
+          <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener">© OpenStreetMap contributors</a>,
+          ODbL · snapshot 28 December 2025
+        </p>
+        <p><strong>Spatial resolution:</strong> 109.45 × 109.45 m</p>
+        <p><strong>Reference parcel area:</strong> 450 m²</p>
+      </div>
 
       <p>
         <a href="map3d/" class="contrast">
@@ -376,7 +494,7 @@
       <h2>Cite as</h2>
 
       <div class="citation-entry">
-        <h3>DINOv2 ViT-L/14 + LoRA</h3>
+        <h3>Urban Land Cover Classification</h3>
         <div class="cite-box">
           <strong>Cite as:</strong>
           <p>
@@ -398,7 +516,7 @@
       </div>
 
       <div class="citation-entry">
-        <h3>TabPFN v2 — Urban Land Value Estimation</h3>
+        <h3>Urban Land Value Estimation</h3>
         <div class="cite-box reserved">
           <strong>Preliminary citation:</strong>
           <p>
@@ -432,12 +550,14 @@
 
     <section class="block">
       <h2>Institutional Notes</h2>
-      <p>
-        Research project conducted by Felinto Costa, PhD candidate in the
-        UEM–UEL Joint Graduate Program in Architecture and Urbanism (PPU),
-        affiliated with the Department of Statistics at the State University
-        of Londrina (UEL), Brazil.
-      </p>
+      <div class="overview-box">
+        <p>
+          Research project conducted by Felinto Costa, PhD candidate in the
+          UEM–UEL Joint Graduate Program in Architecture and Urbanism (PPU),
+          affiliated with the Department of Statistics at the State University
+          of Londrina (UEL), Brazil.
+        </p>
+      </div>
 
       <h3>Research Team</h3>
       <ul>
